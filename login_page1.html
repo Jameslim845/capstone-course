@@ -4,8 +4,19 @@
     <title>E-Commerce Login</title>
 
     <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
         body {
             font-family: Arial;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content {
+            flex: 1;
             text-align: center;
             margin-top: 120px;
         }
@@ -37,9 +48,26 @@
             margin-top: 20px;
             cursor: pointer;
         }
+
+        /* SAME GREEN COLOR AS YOUR FILE */
+        footer {
+            background-color: #2e7d32;
+            color: white;
+            text-align: center;
+            padding: 15px;
+            font-weight: bold;
+        }
+
+        footer a {
+            color: white;
+            text-decoration: none;
+        }
     </style>
 </head>
+
 <body>
+
+<div class="content">
 
 <h2>E-Commerce Login</h2>
 
@@ -55,12 +83,16 @@
 
 <button onclick="login()">Login</button>
 
-<script>
+</div>
 
+<footer>
+    <p>Team 10 | Integration With Payment Provider & Handle Ecommerce Payment Flows </p>
+</footer>
+
+<script>
 function validateEmail() {
     const email = document.getElementById("email").value;
     const icon = document.getElementById("emailIcon");
-
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if(emailPattern.test(email)) {
@@ -90,7 +122,6 @@ function validatePassword() {
 }
 
 function login() {
-
     const emailValid = validateEmail();
     const passwordValid = validatePassword();
 
@@ -100,8 +131,8 @@ function login() {
         alert("Please enter valid email and password.");
     }
 }
-
 </script>
 
 </body>
 </html>
+
