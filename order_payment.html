@@ -4,8 +4,19 @@
     <title>Order & Payment</title>
 
     <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
         body {
             font-family: Arial;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content {
+            flex: 1;
             margin: 40px;
         }
 
@@ -33,12 +44,42 @@
 
         .success { color: green; }
         .error { color: red; }
+
+        /* Card validation icons */
+        #cardIcon {
+            font-size: 18px;
+            margin-left: 8px;
+            font-weight: bold;
+        }
+
+        .valid-check {
+            color: green;
+        }
+
+        .invalid-check {
+            color: red;
+        }
+
+        footer {
+            background-color: #2e7d32;
+            color: white;
+            text-align: center;
+            padding: 15px;
+            font-weight: bold;
+        }
+
+        footer a {
+            color: white;
+            text-decoration: none;
+        }
     </style>
 </head>
 
 <body>
 
-<h1>E-Commerce order and Payment</h1>
+<div class="content">
+
+<h1>E-Commerce Order and Payment</h1>
 
 <h2>Order Information</h2>
 <p><strong>Order ID:</strong> <span id="orderId"></span></p>
@@ -82,38 +123,54 @@
         <td><input type="text" id="cardName" size="30" maxlength="50"></td>
     </tr>
 
+    <!-- UPDATED CARD NUMBER FIELD -->
     <tr>
         <td><label>Card Number</label></td>
         <td>
-            <input type="text" id="cardNumber" maxlength="16" pattern="[0-9]{16}" onkeyup="detectCardType()">
+            <input type="text"
+                   id="cardNumber"
+                   maxlength="16"
+                   placeholder="16-digit card number"
+                   oninput="validateCardNumber(this)">
+            <span id="cardIcon"></span>
         </td>
     </tr>
 
     <tr>
         <td><label>Expiration Date (MM/YY)</label></td>
         <td>
-            <input type="text" id="expiryDate" maxlength="5" placeholder="MM/YY" oninput="formatExpiry(this)">
+            <input type="text" id="expiryDate" maxlength="5"
+                   placeholder="MM/YY"
+                   oninput="formatExpiry(this)">
         </td>
     </tr>
 
     <tr>
         <td><label>CVV</label></td>
         <td>
-            <input type="password" id="cvv" maxlength="4" pattern="[0-9]{3,4}">
+            <input type="password" id="cvv"
+                   maxlength="4"
+                   pattern="[0-9]{3,4}">
         </td>
     </tr>
 
     <tr>
         <td><label>Billing Zip Code</label></td>
         <td>
-            <input type="text" id="zipcode" maxlength="5" pattern="[0-9]{5}" placeholder="5-digit ZIP">
+            <input type="text"
+                   id="zipcode"
+                   maxlength="5"
+                   placeholder="5-digit ZIP">
         </td>
     </tr>
 
     <tr>
         <td><label>Payment Amount ($)</label></td>
         <td>
-            <input type="number" id="amount" step="0.01" min="0.01">
+            <input type="number"
+                   id="amount"
+                   step="0.01"
+                   min="0.01">
         </td>
     </tr>
 
@@ -127,6 +184,12 @@
 
 <div id="result" class="result"></div>
 
+</div>
+
+<footer>
+    <p>Team 10 | Integration With Payment Provider & Handle Ecommerce Payment Flows</p>
+</footer>
+
 <script>
 
 // Generate Order ID
@@ -136,9 +199,9 @@ function generateOrderId() {
 
 document.getElementById("orderId").innerText = generateOrderId();
 
-// Auto format expiry MM/YY
+// Expiry format MM/YY
 function formatExpiry(input) {
-    let value = input.value.replace(/\D/g, "");
+    let value = input.value.replace(/\D/g, '');
     if (value.length >= 3) {
         input.value = value.substring(0,2) + "/" + value.substring(2,4);
     } else {
@@ -146,14 +209,23 @@ function formatExpiry(input) {
     }
 }
 
-// Detect Card Type Automatically
-function detectCardType() {
-    const number = document.getElementById("cardNumber").value;
-    const cardType = document.getElementById("cardType");
+// Card Number Validation
+function validateCardNumber(input) {
 
-    if(number.startsWith("4")) cardType.value = "visa";
-    else if(number.startsWith("5")) cardType.value = "mastercard";
-    else if(number.startsWith("3")) cardType.value = "amex";
+    // Remove non-numeric characters
+    input.value = input.value.replace(/\D/g, '');
+
+    const icon = document.getElementById("cardIcon");
+
+    if(input.value.length === 16) {
+        icon.innerHTML = "✔";
+        icon.className = "valid-check";
+        return true;
+    } else {
+        icon.innerHTML = "✖";
+        icon.className = "invalid-check";
+        return false;
+    }
 }
 
 // Expiration Validation
@@ -178,12 +250,17 @@ function validateZip() {
     return /^[0-9]{5}$/.test(zip);
 }
 
-// Simulate Payment Authorization
+// Payment Simulation
 function submitPayment() {
 
     const result = document.getElementById("result");
-    const cardNumber = document.getElementById("cardNumber").value;
-    const amount = parseFloat(document.getElementById("amount").value);
+    const cardValid = validateCardNumber(document.getElementById("cardNumber"));
+
+    if(!cardValid) {
+        result.innerHTML = "Invalid card number.";
+        result.className = "result error";
+        return;
+    }
 
     if(!validateExpiration()) {
         result.innerHTML = "Card is expired.";
@@ -192,18 +269,11 @@ function submitPayment() {
     }
 
     if(!validateZip()) {
-        result.innerHTML = "Invalid ZIP Code (must be 5 digits).";
+        result.innerHTML = "Invalid ZIP Code.";
         result.className = "result error";
         return;
     }
 
-    if(cardNumber.length !== 16) {
-        result.innerHTML = "Invalid card number.";
-        result.className = "result error";
-        return;
-    }
-
-    // Simulated weighted responses
     const random = Math.random();
 
     if(random <= 0.60) {
