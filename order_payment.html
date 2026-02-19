@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Order & Payment</title>
+    <title>Order and payment</title>
 
     <style>
         html, body {
@@ -20,12 +20,20 @@
             margin: 40px;
         }
 
-        table {
-            margin-top: 20px;
+        .top-section {
+            display: flex;
+            gap: 40px;
+            align-items: flex-start;
         }
 
-        td {
+        table {
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        td, th {
             padding: 8px;
+            border: 1px solid black;
         }
 
         input, select {
@@ -45,20 +53,14 @@
         .success { color: green; }
         .error { color: red; }
 
-        /* Card validation icons */
         #cardIcon {
             font-size: 18px;
             margin-left: 8px;
             font-weight: bold;
         }
 
-        .valid-check {
-            color: green;
-        }
-
-        .invalid-check {
-            color: red;
-        }
+        .valid-check { color: green; }
+        .invalid-check { color: red; }
 
         footer {
             background-color: #2e7d32;
@@ -66,11 +68,6 @@
             text-align: center;
             padding: 15px;
             font-weight: bold;
-        }
-
-        footer a {
-            color: white;
-            text-decoration: none;
         }
     </style>
 </head>
@@ -81,22 +78,59 @@
 
 <h1>E-Commerce Order and Payment</h1>
 
-<h2>Order Information</h2>
-<p><strong>Order ID:</strong> <span id="orderId"></span></p>
+<h2>Order Details</h2>
+
+<div class="top-section">
+
+    <!-- Current Order Table -->
+    <table>
+        <tr>
+            <td><strong>Order ID</strong></td>
+            <td>
+                <input type="text" id="orderId"
+                       maxlength="10"
+                       placeholder="Max 10 characters"
+                       required>
+            </td>
+        </tr>
+
+        <tr>
+            <td><strong>Price ($)</strong></td>
+            <td><input type="number" id="price" readonly></td>
+        </tr>
+
+        <tr>
+            <td><strong>Total ($)</strong></td>
+            <td><input type="number" id="total" readonly></td>
+        </tr>
+    </table>
+
+    <!-- Stored Orders Table (VISUAL ONLY) -->
+    <table id="storedOrdersTable">
+        <tr>
+            <th>Order ID</th>
+            <th>Price</th>
+            <th>Total</th>
+        </tr>
+    </table>
+
+</div>
+
+<button onclick="generateOrderData()">Generate Random Order</button>
+
+<h2>Customer Information</h2>
 
 <table>
     <tr>
-        <td><label>First Name</label></td>
+        <td>First Name</td>
         <td><input type="text" id="firstName" required></td>
     </tr>
-
     <tr>
-        <td><label>Last Name</label></td>
+        <td>Last Name</td>
         <td><input type="text" id="lastName" required></td>
     </tr>
-
     <tr>
-        <td><label>Address</label></td>
+        <td>Address</td>
         <td><input type="text" id="address" size="40" required></td>
     </tr>
 </table>
@@ -106,7 +140,7 @@
 <table>
 
     <tr>
-        <td><label>Card Type</label></td>
+        <td>Card Type</td>
         <td>
             <select id="cardType" required>
                 <option value="">Select Card Type</option>
@@ -119,13 +153,12 @@
     </tr>
 
     <tr>
-        <td><label>Name on Card</label></td>
-        <td><input type="text" id="cardName" size="30" maxlength="50"></td>
+        <td>Name on Card</td>
+        <td><input type="text" id="cardName" maxlength="50"></td>
     </tr>
 
-    <!-- UPDATED CARD NUMBER FIELD -->
     <tr>
-        <td><label>Card Number</label></td>
+        <td>Card Number</td>
         <td>
             <input type="text"
                    id="cardNumber"
@@ -137,25 +170,28 @@
     </tr>
 
     <tr>
-        <td><label>Expiration Date (MM/YY)</label></td>
+        <td>Expiration (MM/YY)</td>
         <td>
-            <input type="text" id="expiryDate" maxlength="5"
+            <input type="text"
+                   id="expiryDate"
+                   maxlength="5"
                    placeholder="MM/YY"
                    oninput="formatExpiry(this)">
         </td>
     </tr>
 
     <tr>
-        <td><label>CVV</label></td>
+        <td>CVV</td>
         <td>
-            <input type="password" id="cvv"
+            <input type="password"
+                   id="cvv"
                    maxlength="4"
                    pattern="[0-9]{3,4}">
         </td>
     </tr>
 
     <tr>
-        <td><label>Billing Zip Code</label></td>
+        <td>Billing Zip Code</td>
         <td>
             <input type="text"
                    id="zipcode"
@@ -165,12 +201,12 @@
     </tr>
 
     <tr>
-        <td><label>Payment Amount ($)</label></td>
+        <td>Payment Amount ($)</td>
         <td>
             <input type="number"
                    id="amount"
                    step="0.01"
-                   min="0.01">
+                   readonly>
         </td>
     </tr>
 
@@ -187,19 +223,42 @@
 </div>
 
 <footer>
-    <p>Team 10 | Integration With Payment Provider & Handle Ecommerce Payment Flows</p>
+    <p>Team 10 | Integration With Payment Provider</p>
 </footer>
 
 <script>
 
-// Generate Order ID
-function generateOrderId() {
-    return "ORD" + Math.floor(Math.random() * 1000000);
+/* ===============================
+   GENERATE RANDOM ORDER DATA
+=================================*/
+function generateOrderData() {
+
+    const randomOrderId = "ORD" + Math.random()
+        .toString(36)
+        .substring(2,7)
+        .toUpperCase();
+
+    const price = (Math.random() * 490 + 10).toFixed(2);
+    const total = (price * 1.10).toFixed(2);
+
+    document.getElementById("orderId").value = randomOrderId;
+    document.getElementById("price").value = price;
+    document.getElementById("total").value = total;
+
+    // Auto-set payment amount to total
+    document.getElementById("amount").value = total;
+
+    // Visual only
+    const table = document.getElementById("storedOrdersTable");
+    const row = table.insertRow();
+    row.insertCell(0).innerHTML = randomOrderId;
+    row.insertCell(1).innerHTML = "$" + price;
+    row.insertCell(2).innerHTML = "$" + total;
 }
 
-document.getElementById("orderId").innerText = generateOrderId();
-
-// Expiry format MM/YY
+/* ===============================
+   FORMAT EXPIRY MM/YY
+=================================*/
 function formatExpiry(input) {
     let value = input.value.replace(/\D/g, '');
     if (value.length >= 3) {
@@ -209,12 +268,11 @@ function formatExpiry(input) {
     }
 }
 
-// Card Number Validation
+/* ===============================
+   CARD VALIDATION
+=================================*/
 function validateCardNumber(input) {
-
-    // Remove non-numeric characters
     input.value = input.value.replace(/\D/g, '');
-
     const icon = document.getElementById("cardIcon");
 
     if(input.value.length === 16) {
@@ -228,11 +286,12 @@ function validateCardNumber(input) {
     }
 }
 
-// Expiration Validation
+/* ===============================
+   EXPIRATION VALIDATION
+=================================*/
 function validateExpiration() {
     const expiry = document.getElementById("expiryDate").value;
     const parts = expiry.split("/");
-
     if(parts.length !== 2) return false;
 
     const month = parseInt(parts[0]);
@@ -244,57 +303,82 @@ function validateExpiration() {
     return expDate > today;
 }
 
-// ZIP Code Validation
+/* ===============================
+   ZIP VALIDATION
+=================================*/
 function validateZip() {
     const zip = document.getElementById("zipcode").value;
     return /^[0-9]{5}$/.test(zip);
 }
 
-// Payment Simulation
+/* ===============================
+   MASK CARD NUMBER
+=================================*/
+function maskCardNumber(cardNumber) {
+    const cleaned = cardNumber.replace(/\D/g, "");
+    const last4 = cleaned.slice(-4);
+    return "**** **** **** " + last4;
+}
+
+/* ===============================
+   SUBMIT PAYMENT
+   (USES ONLY ORDER DETAILS SECTION)
+=================================*/
 function submitPayment() {
 
     const result = document.getElementById("result");
-    const cardValid = validateCardNumber(document.getElementById("cardNumber"));
 
-    if(!cardValid) {
-        result.innerHTML = "Invalid card number.";
+    const orderId = document.getElementById("orderId").value.trim();
+    const total = parseFloat(document.getElementById("total").value);
+    const paymentAmount = parseFloat(document.getElementById("amount").value);
+
+    if (!orderId) {
+        result.innerHTML = "Order ID is required ✖";
         result.className = "result error";
         return;
     }
 
-    if(!validateExpiration()) {
-        result.innerHTML = "Card is expired.";
+    if (paymentAmount !== total) {
+        result.innerHTML = "Payment amount mismatch ✖";
         result.className = "result error";
         return;
     }
 
-    if(!validateZip()) {
-        result.innerHTML = "Invalid ZIP Code.";
+    if (!validateCardNumber(document.getElementById("cardNumber"))) {
+        result.innerHTML = "Invalid card number ✖";
         result.className = "result error";
         return;
     }
 
-    const random = Math.random();
+    if (!validateExpiration()) {
+        result.innerHTML = "Card is expired ✖";
+        result.className = "result error";
+        return;
+    }
 
-    if(random <= 0.60) {
-        result.innerHTML = "Payment Approved ✔";
-        result.className = "result success";
-    }
-    else if(random <= 0.77) {
-        result.innerHTML = "Invalid Card Details ✖";
+    if (!validateZip()) {
+        result.innerHTML = "Invalid ZIP Code ✖";
         result.className = "result error";
+        return;
     }
-    else if(random <= 0.94) {
-        result.innerHTML = "Insufficient Funds ✖";
-        result.className = "result error";
-    }
-    else {
-        result.innerHTML = "500 Internal Server Error ✖";
-        result.className = "result error";
-    }
+
+    const maskedCard = maskCardNumber(
+        document.getElementById("cardNumber").value
+    );
+
+    result.innerHTML =
+        "Payment Approved ✔<br>" +
+        "Order ID: " + orderId + "<br>" +
+        "Charged: $" + total.toFixed(2) + "<br>" +
+        "Masked Card: " + maskedCard;
+
+    result.className = "result success";
 }
 
 </script>
 
 </body>
 </html>
+
+
+
