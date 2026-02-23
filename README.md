@@ -1,80 +1,83 @@
-🧾 E-Commerce Payment Authorization & Settlement System
+# 🧾 E-Commerce Payment Authorization & Settlement System
 
-IS 4880 – Capstone Project
-Group 10
+## IS 4880 – Capstone Project  
+**Group 10**
 
-📌 Overview
+---
 
-This project implements a simulated e-commerce payment workflow including:
+## 📌 Project Overview
 
-Order creation
+This system simulates a real-world e-commerce payment lifecycle:
 
-OAuth token retrieval
+- 🛒 Order Creation  
+- 🔐 OAuth Token Retrieval  
+- 💳 Payment Authorization (Mock Provider)  
+- 🗄 Authorization Storage (MySQL)  
+- 📊 Order & Payment Dashboard  
+- 📦 Warehouse Settlement (Partial + Full)  
+- 🧮 Settlement Validation  
 
-Payment authorization via mock provider
+> ⚠️ **Important:**  
+> This application does NOT process real financial transactions.  
+> All payment interactions use mock endpoints for simulation.
 
-Authorization persistence in MySQL
+---
 
-Order status dashboard
+# 🏗 System Architecture
 
-Warehouse settlement (partial + full)
+## 3-Tier Architecture
 
-Settlement validation against authorized amount
+### 🎨 Presentation Layer
+- HTML
+- CSS
+- Vanilla JavaScript
 
-⚠️ Note: This system does not process real financial transactions. All authorization logic uses mock endpoints for educational simulation.
+### ⚙️ Application Layer
+- Node.js
+- Express
 
-🏗 Architecture
-3-Tier Architecture
-🖥 Presentation Layer
+### 🗄 Data Layer
+- MySQL
+- mysql2
+- dotenv
 
-HTML
+---
 
-CSS
+# 📂 Project Structure
 
-Vanilla JavaScript
-
-⚙️ Application Layer
-
-Node.js
-
-Express.js
-
-🗄 Data Layer
-
-MySQL
-
-mysql2 driver
-
-Environment-based configuration via dotenv
-
-📂 Project Structure
+```
 CapstoneBackend/
 │
-├── server.js                # Express application entry point
-├── db.js                    # MySQL connection pool
+├── server.js
+├── db.js
 ├── package.json
 ├── package-lock.json
 ├── .gitignore
-├── .env                     # Environment config (NOT committed)
+├── .env              (NOT committed)
 └── public/
     ├── login_page1.html
     └── order_payment.html
-⚙️ Environment Configuration
+```
 
-Create a .env file inside CapstoneBackend/:
+---
 
+# ⚙️ Environment Configuration
+
+Create a `.env` file inside `CapstoneBackend/`:
+
+```
 DB_HOST=localhost
 DB_USER=your_mysql_username
 DB_PASSWORD=your_mysql_password
 DB_NAME=capstone_payments
 PORT=3000
+```
 
-The application loads these values at runtime using dotenv.
+---
 
-🗄 Database Schema
+# 🗄 Database Setup
 
-Run the following SQL:
-
+```sql
 CREATE DATABASE capstone_payments;
 USE capstone_payments;
 
@@ -89,190 +92,186 @@ CREATE TABLE authorizations (
     settlement_status VARCHAR(30) DEFAULT 'NOT_SETTLED',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-📊 Stored Fields
+```
 
-Each authorization stores:
+---
 
-order_id
+## 📌 Stored Fields
 
-transaction_datetime
+Each authorization record includes:
 
-authorization_amount
+- `order_id`
+- `transaction_datetime`
+- `authorization_amount`
+- `authorization_expiration`
+- `authorization_token`
+- `payment_status`
+- `settlement_status`
+- `created_at`
 
-authorization_expiration
+### 🔐 Authorization Token Format
 
-authorization_token
-
-payment_status
-
-settlement_status
-
-created_at
-
-🔐 Authorization Token Format
-
-Tokens are stored as:
-
+```
 OrderId + "_" + returned_token
+```
 
 Example:
 
+```
 ORD12345_abc987xyz
-🔐 Authorization Flow
-Step 1 – OAuth Token Retrieval
+```
+
+---
+
+# 🔐 Authorization Flow
+
+## 1️⃣ OAuth Token Retrieval
+
+**Endpoint:**
+```
 POST /oauth/token
+```
 
-If no token is returned → authorization fails.
+- Retrieves mock OAuth token  
+- If token is missing → authorization fails  
 
-Step 2 – Payment Authorization
+---
+
+## 2️⃣ Payment Authorization
+
+**Endpoint:**
+```
 POST /authorize
 Headers:
-    Authorization: Bearer <token>
+Authorization: Bearer <token>
+```
 
 Possible responses:
 
-SUCCESS
+- SUCCESS  
+- FAILED_INSUFFICIENT_FUNDS  
+- FAILED_INVALID_CARD  
+- SYSTEM_ERROR  
 
-FAILED_INSUFFICIENT_FUNDS
+---
 
-FAILED_INVALID_CARD
+## 3️⃣ Authorization Persistence
 
-SYSTEM_ERROR
+After authorization, the backend stores:
 
-Step 3 – Authorization Persistence
+- Order ID  
+- Transaction timestamp  
+- Authorized amount  
+- Authorization expiration  
+- Concatenated authorization token  
+- Payment status  
 
-The backend stores:
+---
 
-OrderId
+# 🧮 Settlement Logic
 
-Transaction DateTime
+Warehouse users submit settlement requests.
 
-Authorized Amount
+### Validation Rules
 
-Authorization Expiration
-
-Concatenated Authorization Token
-
-Payment Status
-
-🧮 Settlement Logic
-
-Warehouse UI allows settlement submission.
-
-Rules
+```
 If settlement_amount > authorization_amount → FAIL
 If settlement_amount ≤ authorization_amount → SUCCESS
+```
 
-Partial settlements are supported.
+- Partial settlements are supported  
+- Settlement status is updated in the database  
 
-Settlement updates settlement_status.
+---
 
-🖥 Order Dashboard
+# 📊 Order Dashboard
 
 Displays:
 
-OrderId
+- Order ID  
+- Payment status  
+- Authorized amount  
+- Authorization timestamp  
+- Authorization expiration  
+- Settlement status  
 
-Payment Status
+## Sorting & Filtering
 
-Authorized Amount
+- Sort by Order ID  
+- Sort by payment status  
+- Sort by date  
+- Sort by amount  
+- Filter by status  
+- Filter by date range  
+- Filter by amount range  
+- Optional search by Order ID  
 
-Authorization Timestamp
+---
 
-Authorization Expiration
+# 🚀 Local Development Setup
 
-Settlement Status
+## Clone Repository
 
-Supports
-
-Sort by OrderId
-
-Sort by Payment Status
-
-Sort by Date
-
-Sort by Amount
-
-Filter by Status
-
-Filter by Date Range
-
-Filter by Amount Range
-
-Optional text search by OrderId
-
-🚀 Local Development Setup
-1️⃣ Clone the Repository
+```
 git clone https://github.com/Jameslim845/capstone-course.git
 cd capstone-course/CapstoneBackend
-2️⃣ Install Dependencies
+```
+
+## Install Dependencies
+
+```
 npm install
-3️⃣ Configure .env
+```
 
-Add your local MySQL credentials.
+## Configure Environment
 
-4️⃣ Start the Server
+Create `.env` file with local MySQL credentials.
+
+## Start Server
+
+```
 node server.js
+```
 
-Server runs at:
+Application runs at:
 
+```
 http://localhost:3000
-🔄 Backend API Endpoints
-Method	Endpoint	Description
-POST	/api/authorize	Handles OAuth + payment authorization
-POST	/api/settle	Handles settlement validation
-GET	/api/orders	Returns order list for dashboard
-🧪 Testing
-Manual Test Cases
+```
 
-Expired card → blocked client-side
+---
 
-Missing OAuth token → authorization fails
+# 🔄 API Endpoints
 
-Insufficient funds → FAILED_INSUFFICIENT_FUNDS
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/authorize` | OAuth + payment authorization |
+| POST | `/api/settle` | Settlement validation |
+| GET  | `/api/orders` | Returns order list |
 
-Over-settlement → rejected
+---
 
-Partial settlement → accepted
+# 🔒 Security Considerations
 
-Verify Database
-SELECT * FROM authorizations;
-🔒 Security Considerations
+- No hardcoded credentials  
+- `.env` excluded from repository  
+- Authorization header required  
+- Sensitive card data masked in UI  
+- Server-side validation prevents overcharge  
 
-No hardcoded credentials
+---
 
-.env excluded via .gitignore
+# 📈 Future Enhancements
 
-Authorization header required
+- Token expiration enforcement  
+- Role-based authentication  
+- Refund workflow  
+- AWS EC2 deployment  
+- CI/CD pipeline  
+- Automated test suite  
 
-Client-side validation prevents malformed input
+---
 
-Sensitive data masked in UI
+# 📄 License
 
-Server-side settlement validation prevents overcharge
-
-🧰 Dependencies
-
-express
-
-mysql2
-
-dotenv
-
-📈 Future Enhancements
-
-Token expiration enforcement
-
-Full role-based authentication
-
-Refund workflow
-
-AWS EC2 deployment
-
-CI/CD via GitHub Actions
-
-Automated unit + integration tests
-
-📄 License
-
-Educational use only – IS 4880 Capstone Project
+Educational Use Only – IS 4880 Capstone
