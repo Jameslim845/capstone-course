@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Team 10 Inc. | Product Page</title>
+    <style>
+        :root {
+            --bg: #eef2f5;
+            --card: rgba(255, 255, 255, 0.94);
+            --text: #16202a;
+            --muted: #5d6a77;
+            --accent: #101820;
+            --accent-2: #d4af37;
+            --accent-3: #1f6f8b;
+            --line: #dce3ea;
+            --shadow: 0 18px 45px rgba(14, 23, 34, 0.12);
+            --radius-xl: 28px;
+            --radius-lg: 22px;
+            --radius-md: 18px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(212, 175, 55, 0.10), transparent 25%),
+                linear-gradient(180deg, #f9fbfc 0%, var(--bg) 100%);
+        }
+
+        .page-shell {
+            width: min(1460px, calc(100% - 40px));
+            margin: 0 auto;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 24px;
+            padding: 28px 0 18px;
+            flex-wrap: wrap;
+        }
+
+        .brand-wrap h1 {
+            margin: 0;
+            font-size: clamp(2rem, 3vw, 3rem);
+            letter-spacing: -0.03em;
+        }
+
+        .brand-wrap p {
+            margin: 8px 0 0;
+            color: var(--muted);
+            font-size: 1rem;
+        }
+
+        .brand-mark {
+            color: var(--accent-2);
+            font-weight: 700;
+        }
+
+        .welcome {
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 0.98rem;
+        }
+
+        .btn,
+        .product-card button {
+            border: none;
+            border-radius: 999px;
+            padding: 14px 22px;
+            font-size: 0.98rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+
+        .btn:hover,
+        .product-card button:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.88);
+            color: var(--accent);
+            border: 1px solid var(--line);
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 28px;
+            align-items: stretch;
+            margin: 8px 0 34px;
+        }
+
+        .hero-panel,
+        .hero-side-card {
+            background: linear-gradient(145deg, rgba(255,255,255,0.95), rgba(244,247,250,0.93));
+            border: 1px solid rgba(220, 227, 234, 0.95);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow);
+        }
+
+        .hero-panel {
+            padding: 42px;
+            min-height: 360px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-panel::after {
+            content: "";
+            position: absolute;
+            inset: auto -60px -80px auto;
+            width: 260px;
+            height: 260px;
+            background: radial-gradient(circle, rgba(31, 111, 139, 0.16), transparent 65%);
+            pointer-events: none;
+        }
+
+        .eyebrow {
+            display: inline-block;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(16, 24, 32, 0.06);
+            color: var(--accent-3);
+            font-size: 0.88rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            margin-bottom: 18px;
+        }
+
+        .hero-panel h2 {
+            margin: 0 0 14px;
+            font-size: clamp(2.2rem, 4vw, 4rem);
+            line-height: 1.02;
+            letter-spacing: -0.04em;
+            max-width: 10ch;
+        }
+
+        .hero-panel p {
+            max-width: 58ch;
+            line-height: 1.7;
+            color: var(--muted);
+            font-size: 1.04rem;
+            margin: 0 0 28px;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .stat-pill {
+            padding: 14px 16px;
+            border-radius: 18px;
+            background: rgba(255,255,255,0.78);
+            border: 1px solid rgba(220, 227, 234, 0.95);
+            min-width: 135px;
+        }
+
+        .stat-pill strong {
+            display: block;
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+        }
+
+        .stat-pill span {
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        .hero-side-card {
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 18px;
+        }
+
+        .hero-side-card h3 {
+            margin: 0;
+            font-size: 1.35rem;
+        }
+
+        .hero-side-card p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.65;
+        }
+
+        .spotlight-box {
+            border-radius: 20px;
+            min-height: 190px;
+            border: 2px dashed rgba(31, 111, 139, 0.30);
+            background: linear-gradient(135deg, rgba(31, 111, 139, 0.08), rgba(212, 175, 55, 0.10));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #33586b;
+            padding: 20px;
+            font-weight: 700;
+        }
+
+        .parallax-section {
+            position: relative;
+            min-height: 460px;
+            border-radius: 34px;
+            overflow: hidden;
+            margin: 20px 0 42px;
+            border: 1px solid rgba(220, 227, 234, 0.9);
+            box-shadow: var(--shadow);
+            background: #1a2430;
+        }
+
+        .parallax-bg {
+            position: absolute;
+            inset: -8% 0;
+            background-image:
+                linear-gradient(120deg, rgba(10,18,28,0.70), rgba(10,18,28,0.28)),
+                url('paralax_image.png');
+            background-size: cover;
+            background-position: center;
+            transform: translate3d(0, 0, 0) scale(1.12);
+            will-change: transform;
+            pointer-events: none;
+        }
+
+        .parallax-content {
+            position: relative;
+            z-index: 1;
+            min-height: 460px;
+            display: flex;
+            align-items: center;
+            padding: 52px;
+            color: #fff;
+        }
+
+        .parallax-copy {
+            max-width: 700px;
+        }
+
+        .parallax-copy h2 {
+            font-size: clamp(2rem, 4vw, 3.6rem);
+            line-height: 1.05;
+            margin: 0 0 16px;
+            letter-spacing: -0.04em;
+        }
+
+        .parallax-copy p {
+            margin: 0 0 18px;
+            line-height: 1.75;
+            font-size: 1.05rem;
+            color: rgba(255,255,255,0.88);
+        }
+
+        .section-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            gap: 18px;
+            margin: 0 0 22px;
+            flex-wrap: wrap;
+        }
+
+        .section-heading h2 {
+            margin: 0;
+            font-size: clamp(1.8rem, 2.5vw, 2.6rem);
+        }
+
+        .section-heading p {
+            margin: 8px 0 0;
+            color: var(--muted);
+            max-width: 720px;
+            line-height: 1.6;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 24px;
+            margin-bottom: 52px;
+        }
+
+        .product-card {
+            background: var(--card);
+            border: 1px solid rgba(220, 227, 234, 0.92);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+            backdrop-filter: blur(6px);
+        }
+
+        .product-image {
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            border-radius: 18px;
+            overflow: hidden;
+            border: 2px dashed rgba(31, 111, 139, 0.22);
+            background:
+                linear-gradient(135deg, rgba(16,24,32,0.04), rgba(31,111,139,0.08));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #4b6474;
+            text-align: center;
+            padding: 16px;
+            margin-bottom: 18px;
+        }
+
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            border-radius: 16px;
+        }
+
+        .product-topline {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .product-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 7px 12px;
+            border-radius: 999px;
+            background: rgba(212, 175, 55, 0.14);
+            color: #8b6b12;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+        }
+
+        .sku {
+            color: var(--muted);
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .product-card h3 {
+            margin: 0 0 8px;
+            font-size: 1.28rem;
+        }
+
+        .product-desc {
+            color: var(--muted);
+            line-height: 1.6;
+            margin-bottom: 18px;
+            min-height: 76px;
+        }
+
+        .product-meta {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        .meta-pill {
+            padding: 8px 11px;
+            border-radius: 999px;
+            background: rgba(16, 24, 32, 0.05);
+            color: #324250;
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            gap: 16px;
+            margin-top: auto;
+            margin-bottom: 16px;
+        }
+
+        .price-wrap small {
+            display: block;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .price {
+            font-size: 1.95rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+        }
+
+        .product-card button {
+            width: 100%;
+            background: linear-gradient(135deg, var(--accent), #24384a);
+            color: #fff;
+            box-shadow: 0 10px 22px rgba(16, 24, 32, 0.18);
+        }
+
+        .product-card button:hover {
+            background: linear-gradient(135deg, #0d141b, #1a2a36);
+        }
+
+        footer {
+            background: #101820;
+            color: rgba(255,255,255,0.92);
+            padding: 24px 20px;
+            text-align: center;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        footer span {
+            color: var(--accent-2);
+        }
+
+        @media (max-width: 980px) {
+            .hero {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-panel,
+            .hero-side-card,
+            .parallax-content {
+                padding: 28px;
+            }
+
+            .parallax-bg {
+                inset: -5% 0;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .page-shell {
+                width: min(100%, calc(100% - 20px));
+            }
+
+            .topbar {
+                padding-top: 18px;
+            }
+
+            .hero-panel h2,
+            .parallax-copy h2 {
+                max-width: none;
+            }
+
+            .price {
+                font-size: 1.65rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-shell">
+        <div class="topbar">
+            <div class="brand-wrap">
+                <h1>Team 10 Inc. <span class="brand-mark">&copy;</span></h1>
+                <p>Sports performance, luxury design, and premium everyday footwear.</p>
+                <div class="welcome" id="welcomeText">Welcome</div>
+            </div>
+            <button class="btn btn-secondary" onclick="logout()">Log Out</button>
+        </div>
+
+        <section class="hero">
+            <div class="hero-panel">
+                <div class="eyebrow">Premium Footwear Catalog</div>
+                <h2>Find your next pair with a cleaner checkout flow.</h2>
+                <p>
+                    Browse the Team 10 Inc. lineup, choose a shoe, and continue directly to checkout!
+                    The selected product is stored in <strong>sessionStorage</strong> so our checkout page can stay compatible with the current backend and MySQL setup.
+                </p>
+                <div class="hero-stats">
+                    <div class="stat-pill">
+                        <strong>10 Styles</strong>
+                        <span>Luxury + sport mix</span>
+                    </div>
+                    <div class="stat-pill">
+                        <strong>$68–$425</strong>
+                        <span>Wide pricing range</span>
+                    </div>
+                    <div class="stat-pill">
+                        <strong>Demo Ready</strong>
+                        <span>Login → Product → Payment</span>
+                    </div>
+                </div>
+            </div>
+
+            <aside class="hero-side-card">
+                <div>
+                    <h1>Welcome</h1>
+                    <p>
+                        View our product catalog below!
+                    </p>
+                </div>
+                <div class="spotlight-box" style="padding:0; border-style:solid; border-width:1px; border-color: rgba(220, 227, 234, 0.95); background:#fff; overflow:hidden;">
+                    <img src="exclusive_luxury_sneaker_collection.png" alt="Team 10 Inc. luxury sneaker collection promotional banner" style="width:100%; height:100%; min-height:190px; object-fit:cover; display:block;" />
+                </div>
+            </aside>
+        </section>
+
+        <section class="parallax-section" aria-label="Brand showcase">
+            <div class="parallax-bg"></div>
+            <div class="parallax-content">
+                <div class="parallax-copy">
+                    <div class="eyebrow" style="background: rgba(255,255,255,0.14); color: #f2d680;"></div>
+                    <h2>Built to bring excellent service to our clients</h2>
+                    <p>
+                        
+                    </p>
+                   
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="section-heading">
+                <div>
+                    <h2>Featured Collection</h2>
+                   
+                </div>
+            </div>
+            <div class="product-grid" id="productGrid"></div>
+        </section>
+    </div>
+
+    <footer>
+        Team 10 Inc. <span>&copy;</span> Premium Footwear Showcase
+    </footer>
+
+    <script>
+        const products = [
+            {
+                id: 'T10-STRIDE-101',
+                name: 'Apex Stride Runner',
+                description: 'A lightweight premium running shoe with a responsive sole, sleek profile, and all-day comfort for training or daily wear.',
+                price: 68.00,
+                badge: 'Runner',
+                category: 'Sport',
+                material: 'Mesh + Foam',
+                image: 'apex_stride_runner.png'
+            },
+            {
+                id: 'T10-COURT-114',
+                name: 'Velour Court Classic',
+                description: 'Luxury court-inspired sneakers that blend soft materials, clean paneling, and a refined casual silhouette.',
+                price: 92.00,
+                badge: 'Classic',
+                category: 'Lifestyle',
+                material: 'Leather Blend',
+                image: 'velour_court_classic.png'
+            },
+            {
+                id: 'T10-ELEVATE-128',
+                name: 'Elevate Sprint Pro',
+                description: 'Engineered for explosive movement with a sculpted heel, breathable upper, and a performance-focused midsole.',
+                price: 119.00,
+                badge: 'Performance',
+                category: 'Training',
+                material: 'Knit Upper',
+                image: 'elevate_sprint_pro.png'
+            },
+            {
+                id: 'T10-MONARCH-137',
+                name: 'Monarch Street Luxe',
+                description: 'A polished high-end streetwear shoe designed for standout styling, premium textures, and elevated everyday wear.',
+                price: 138.00,
+                badge: 'Luxury',
+                category: 'Streetwear',
+                material: 'Premium Leather',
+                image: 'monarch_street_luxe.png'
+            },
+            {
+                id: 'T10-GRAVITY-149',
+                name: 'Gravity Pulse Max',
+                description: 'A bold athletic sneaker with cushioned support and a modern oversized sole for comfort-focused movement.',
+                price: 156.00,
+                badge: 'Best Seller',
+                category: 'Athletic',
+                material: 'Synthetic + Air Sole',
+                image: 'gravity_pulse_max.png'
+            },
+            {
+                id: 'T10-REGAL-166',
+                name: 'Regal Drive Loafer-Sneak',
+                description: 'A hybrid luxury casual shoe that mixes the attitude of a sneaker with the finish of a refined loafer.',
+                price: 174.00,
+                badge: 'Hybrid',
+                category: 'Luxury Casual',
+                material: 'Italian Leather',
+                image: 'regal_drive_loafer-sneaker.png'
+            },
+            {
+                id: 'T10-TITAN-177',
+                name: 'Titan Court Elite',
+                description: 'A structured, supportive basketball-inspired silhouette with premium finishes and high-end detailing.',
+                price: 189.00,
+                badge: 'Elite',
+                category: 'Court',
+                material: 'Leather + Rubber',
+                image: 'titan_court_elite.png'
+            },
+            {
+                id: 'T10-AETHER-188',
+                name: 'Aether Carbon Glide',
+                description: 'A futuristic race-day shoe concept with a carbon-style plate look and a streamlined high-performance upper.',
+                price: 205.00,
+                badge: 'Fast',
+                category: 'Race',
+                material: 'Carbon Plate Style',
+                image: 'aether_carbon_glide.png'
+            },
+            {
+                id: 'T10-OPULENT-205',
+                name: 'Opulent Crest Signature',
+                description: 'An upscale statement sneaker with metallic accents, layered premium materials, and a runway-inspired profile.',
+                price: 248.00,
+                badge: 'Signature',
+                category: 'Designer',
+                material: 'Luxury Mixed Materials',
+                image: 'opulent_crest_signature.png'
+            },
+            {
+                id: 'T10-IMPERIUM-999',
+                name: 'Imperium 24K Edition',
+                description: 'A dramatic limited-edition concept pair made for a flashy premium tier demo, included to add one memorable high-end outlier.',
+                price: 425.00,
+                badge: 'Limited',
+                category: 'Collector',
+                material: 'Gold Accent Finish',
+                image: 'imperium_24k_edition.png'
+            }
+        ];
+
+    
+    function updateParallax() {
+        const section = document.querySelector('.parallax-section');
+        const bg = document.querySelector('.parallax-bg');
+        if (!section || !bg) return;
+
+        const rect = section.getBoundingClientRect();
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+
+        // progress from top entering viewport to bottom leaving viewport
+        const progress = (rect.top + rect.height) / (viewportHeight + rect.height);
+        const offset = (0.5 - progress) * 70; // stronger visible movement
+
+        bg.style.transform = `translate3d(0, ${offset}px, 0) scale(1.12)`;
+    }
+
+    window.addEventListener('scroll', updateParallax, { passive: true });
+    window.addEventListener('resize', updateParallax);
+
+    function buildProductCards() {
+            const grid = document.getElementById('productGrid');
+            grid.innerHTML = '';
+
+            products.forEach(product => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.innerHTML = `
+                    <div class="product-image">
+                        <img src="${product.image}" alt="${product.name}" />
+                    </div>
+                    <div class="product-topline">
+                        <div class="product-badge">${product.badge}</div>
+                        <div class="sku">${product.id}</div>
+                    </div>
+                    <h3>${product.name}</h3>
+                    <div class="product-desc">${product.description}</div>
+                    <div class="product-meta">
+                        <div class="meta-pill">${product.category}</div>
+                        <div class="meta-pill">${product.material}</div>
+                    </div>
+                    <div class="price-row">
+                        <div class="price-wrap">
+                            <small>Starting at</small>
+                            <div class="price">$${product.price.toFixed(2)}</div>
+                        </div>
+                    </div>
+                    <button onclick="selectProduct('${product.id}')">Select Product</button>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function selectProduct(productId) {
+            const product = products.find(item => item.id === productId);
+            if (!product) return;
+
+            const subtotal = Number(product.price);
+            const total = Number((subtotal * 1.10).toFixed(2));
+            const orderId = 'ORD' + Math.random().toString(36).substring(2, 7).toUpperCase();
+
+            sessionStorage.setItem('selectedProduct', JSON.stringify({
+                orderId,
+                productId: product.id,
+                productName: product.name,
+                price: subtotal.toFixed(2),
+                total: total.toFixed(2)
+            }));
+
+            window.location.href = 'order_payment.html';
+        }
+
+        function logout() {
+            sessionStorage.removeItem('loggedInUserEmail');
+            sessionStorage.removeItem('selectedProduct');
+            window.location.href = 'login_page1.html';
+        }
+
+        (function initPage() {
+            const email = sessionStorage.getItem('loggedInUserEmail');
+            document.getElementById('welcomeText').textContent = email
+                ? `Signed in as ${email}`
+                : 'Signed in for demo checkout flow';
+
+            buildProductCards();
+        })();
+    </script>
+</body>
+</html>
