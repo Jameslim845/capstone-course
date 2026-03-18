@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Order and payment</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order and Payment</title>
 
     <style>
         html, body {
@@ -10,9 +12,10 @@
         }
 
         body {
-            font-family: Arial;
+            font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
+            background: #f7f8f9;
         }
 
         .content {
@@ -20,15 +23,39 @@
             margin: 40px;
         }
 
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .page-header p {
+            margin: 6px 0 0 0;
+            color: #5f6b7a;
+        }
+
         .top-section {
             display: flex;
             gap: 40px;
             align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .summary-box {
+            background: #eef6ef;
+            border: 1px solid #d5e7d7;
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin: 18px 0 22px;
+            color: #1f2937;
         }
 
         table {
             margin-top: 20px;
             border-collapse: collapse;
+            background: white;
         }
 
         td, th {
@@ -43,11 +70,13 @@
         button {
             padding: 10px 20px;
             margin-top: 15px;
+            cursor: pointer;
         }
 
         .result {
             font-weight: bold;
             margin-top: 20px;
+            line-height: 1.6;
         }
 
         .success { color: green; }
@@ -61,6 +90,12 @@
 
         .valid-check { color: green; }
         .invalid-check { color: red; }
+
+        .back-link {
+            text-decoration: none;
+            color: #2e7d32;
+            font-weight: bold;
+        }
 
         footer {
             background-color: #2e7d32;
@@ -76,21 +111,25 @@
 
 <div class="content">
 
-<h1>E-Commerce Order and Payment</h1>
+<div class="page-header">
+    <div>
+        <h1 style="margin-bottom:0;">E-Commerce Order and Payment</h1>
+        <p>Complete checkout for the product selected on the landing page.</p>
+    </div>
+    <a class="back-link" href="product_page.html">← Back to Product Page</a>
+</div>
+
+<div id="selectedProductSummary" class="summary-box" style="display:none;"></div>
 
 <h2>Order Details</h2>
 
 <div class="top-section">
 
-    <!-- Current Order Table -->
     <table>
         <tr>
             <td><strong>Order ID</strong></td>
             <td>
-                <input type="text" id="orderId"
-                       maxlength="10"
-                       placeholder="Max 10 characters"
-                       required>
+                <input type="text" id="orderId" maxlength="10" placeholder="Max 10 characters" required>
             </td>
         </tr>
 
@@ -105,7 +144,6 @@
         </tr>
     </table>
 
-    <!-- Stored Orders Table (VISUAL ONLY) -->
     <table id="storedOrdersTable">
         <tr>
             <th>Order ID</th>
@@ -138,7 +176,6 @@
 <h2>Card Details</h2>
 
 <table>
-
     <tr>
         <td>Card Type</td>
         <td>
@@ -160,11 +197,7 @@
     <tr>
         <td>Card Number</td>
         <td>
-            <input type="text"
-                   id="cardNumber"
-                   maxlength="16"
-                   placeholder="16-digit card number"
-                   oninput="validateCardNumber(this)">
+            <input type="text" id="cardNumber" maxlength="16" placeholder="16-digit card number" oninput="validateCardNumber(this)">
             <span id="cardIcon"></span>
         </td>
     </tr>
@@ -172,41 +205,28 @@
     <tr>
         <td>Expiration (MM/YY)</td>
         <td>
-            <input type="text"
-                   id="expiryDate"
-                   maxlength="5"
-                   placeholder="MM/YY"
-                   oninput="formatExpiry(this)">
+            <input type="text" id="expiryDate" maxlength="5" placeholder="MM/YY" oninput="formatExpiry(this)">
         </td>
     </tr>
 
     <tr>
         <td>CVV</td>
         <td>
-            <input type="password"
-                   id="cvv"
-                   maxlength="4"
-                   pattern="[0-9]{3,4}">
+            <input type="password" id="cvv" maxlength="4" pattern="[0-9]{3,4}">
         </td>
     </tr>
 
     <tr>
         <td>Billing Zip Code</td>
         <td>
-            <input type="text"
-                   id="zipcode"
-                   maxlength="5"
-                   placeholder="5-digit ZIP">
+            <input type="text" id="zipcode" maxlength="5" placeholder="5-digit ZIP">
         </td>
     </tr>
 
     <tr>
         <td>Payment Amount ($)</td>
         <td>
-            <input type="number"
-                   id="amount"
-                   step="0.01"
-                   readonly>
+            <input type="number" id="amount" step="0.01" readonly>
         </td>
     </tr>
 
@@ -215,7 +235,6 @@
             <button onclick="submitPayment()">Submit Payment</button>
         </td>
     </tr>
-
 </table>
 
 <div id="result" class="result"></div>
@@ -227,38 +246,56 @@
 </footer>
 
 <script>
+function addVisualOrderRow(orderId, price, total) {
+    const table = document.getElementById("storedOrdersTable");
+    const row = table.insertRow();
+    row.insertCell(0).innerHTML = orderId;
+    row.insertCell(1).innerHTML = "$" + Number(price).toFixed(2);
+    row.insertCell(2).innerHTML = "$" + Number(total).toFixed(2);
+}
 
-/* ===============================
-   GENERATE RANDOM ORDER DATA
-=================================*/
+function populateOrderFields(orderId, price, total) {
+    document.getElementById("orderId").value = orderId;
+    document.getElementById("price").value = Number(price).toFixed(2);
+    document.getElementById("total").value = Number(total).toFixed(2);
+    document.getElementById("amount").value = Number(total).toFixed(2);
+}
+
+function loadSelectedProduct() {
+    const raw = sessionStorage.getItem("selectedProduct");
+    if (!raw) return;
+
+    try {
+        const selected = JSON.parse(raw);
+        if (!selected.orderId || !selected.price || !selected.total) return;
+
+        populateOrderFields(selected.orderId, selected.price, selected.total);
+        addVisualOrderRow(selected.orderId, selected.price, selected.total);
+
+        const summary = document.getElementById("selectedProductSummary");
+        summary.style.display = "block";
+        summary.innerHTML = `
+            <strong>Selected Product:</strong> ${selected.productName || 'Product'}<br>
+            <strong>Product ID:</strong> ${selected.productId || 'N/A'}<br>
+            <strong>Checkout Total:</strong> $${Number(selected.total).toFixed(2)}
+        `;
+    } catch (error) {
+        console.error("Could not read selected product from sessionStorage", error);
+    }
+}
+
 function generateOrderData() {
-
-    const randomOrderId = "ORD" + Math.random()
-        .toString(36)
-        .substring(2,7)
-        .toUpperCase();
-
+    const randomOrderId = "ORD" + Math.random().toString(36).substring(2,7).toUpperCase();
     const price = (Math.random() * 490 + 10).toFixed(2);
     const total = (price * 1.10).toFixed(2);
 
-    document.getElementById("orderId").value = randomOrderId;
-    document.getElementById("price").value = price;
-    document.getElementById("total").value = total;
+    populateOrderFields(randomOrderId, price, total);
+    addVisualOrderRow(randomOrderId, price, total);
 
-    // Auto-set payment amount to total
-    document.getElementById("amount").value = total;
-
-    // Visual only
-    const table = document.getElementById("storedOrdersTable");
-    const row = table.insertRow();
-    row.insertCell(0).innerHTML = randomOrderId;
-    row.insertCell(1).innerHTML = "$" + price;
-    row.insertCell(2).innerHTML = "$" + total;
+    sessionStorage.removeItem("selectedProduct");
+    document.getElementById("selectedProductSummary").style.display = "none";
 }
 
-/* ===============================
-   FORMAT EXPIRY MM/YY
-=================================*/
 function formatExpiry(input) {
     let value = input.value.replace(/\D/g, '');
     if (value.length >= 3) {
@@ -268,14 +305,11 @@ function formatExpiry(input) {
     }
 }
 
-/* ===============================
-   CARD VALIDATION
-=================================*/
 function validateCardNumber(input) {
     input.value = input.value.replace(/\D/g, '');
     const icon = document.getElementById("cardIcon");
 
-    if(input.value.length === 16) {
+    if (input.value.length === 16) {
         icon.innerHTML = "✔";
         icon.className = "valid-check";
         return true;
@@ -286,16 +320,15 @@ function validateCardNumber(input) {
     }
 }
 
-/* ===============================
-   EXPIRATION VALIDATION
-=================================*/
 function validateExpiration() {
     const expiry = document.getElementById("expiryDate").value;
     const parts = expiry.split("/");
-    if(parts.length !== 2) return false;
+    if (parts.length !== 2) return false;
 
     const month = parseInt(parts[0]);
     const year = parseInt("20" + parts[1]);
+
+    if (isNaN(month) || month < 1 || month > 12 || isNaN(year)) return false;
 
     const today = new Date();
     const expDate = new Date(year, month);
@@ -303,27 +336,17 @@ function validateExpiration() {
     return expDate > today;
 }
 
-/* ===============================
-   ZIP VALIDATION
-=================================*/
 function validateZip() {
     const zip = document.getElementById("zipcode").value;
     return /^[0-9]{5}$/.test(zip);
 }
 
-/* ===============================
-   MASK CARD NUMBER
-=================================*/
 function maskCardNumber(cardNumber) {
     const cleaned = cardNumber.replace(/\D/g, "");
     const last4 = cleaned.slice(-4);
     return "**** **** **** " + last4;
 }
 
-/* ===============================
-   SUBMIT PAYMENT
-   (USES ONLY ORDER DETAILS SECTION)
-=================================*/
 async function submitPayment() {
     const result = document.getElementById("result");
 
@@ -338,8 +361,6 @@ async function submitPayment() {
     const expiryDate = document.getElementById("expiryDate").value;
     const zip = document.getElementById("zipcode").value;
 
-    // 1) Client-side validation (same rules you had before)
-
     if (!orderId) {
         result.innerHTML = "Order ID is required ✖";
         result.className = "result error";
@@ -348,6 +369,12 @@ async function submitPayment() {
 
     if (isNaN(total) || isNaN(paymentAmount) || paymentAmount !== total) {
         result.innerHTML = "Payment amount must match total ✖";
+        result.className = "result error";
+        return;
+    }
+
+    if (!firstName || !lastName || !address) {
+        result.innerHTML = "Customer information is required ✖";
         result.className = "result error";
         return;
     }
@@ -370,7 +397,6 @@ async function submitPayment() {
         return;
     }
 
-    // 2) Build the payload to send to the backend
     const payload = {
         orderId,
         amount: paymentAmount,
@@ -383,7 +409,6 @@ async function submitPayment() {
     };
 
     try {
-        // 3) Call your Express backend
         const response = await fetch('/api/authorize', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -392,14 +417,12 @@ async function submitPayment() {
 
         const data = await response.json();
 
-        // 4) Handle failures (HTTP error or success:false)
         if (!response.ok || !data.success) {
             result.innerHTML = "Authorization failed: " + (data.message || "Unknown error") + " ✖";
             result.className = "result error";
             return;
         }
 
-        // 5) On success, show confirmation using the response + masked card
         const maskedCard = maskCardNumber(cardNumber);
 
         result.innerHTML =
@@ -410,7 +433,6 @@ async function submitPayment() {
             "Auth Token: " + data.authorizationToken;
 
         result.className = "result success";
-
     } catch (err) {
         console.error('Error calling backend:', err);
         result.innerHTML = "An error occurred while processing payment ✖";
@@ -418,10 +440,8 @@ async function submitPayment() {
     }
 }
 
+loadSelectedProduct();
 </script>
 
 </body>
 </html>
-
-
-
