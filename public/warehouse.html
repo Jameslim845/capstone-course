@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warehouse Settlement</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            background: #f4f6f8;
+            color: #1f2937;
+        }
+
+        .content {
+            flex: 1;
+            margin: 32px;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        .page-header p {
+            margin: 6px 0 0 0;
+            color: #5f6b7a;
+        }
+
+        .back-link {
+            text-decoration: none;
+            color: #2e7d32;
+            font-weight: bold;
+        }
+
+        .page-grid {
+            display: grid;
+            grid-template-columns: 0.9fr 1.1fr;
+            gap: 28px;
+            align-items: start;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #d9e1e7;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+            padding: 22px;
+            margin-bottom: 22px;
+        }
+
+        .card h2 {
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 170px 1fr;
+            gap: 12px 16px;
+            align-items: center;
+        }
+
+        .form-grid label {
+            font-weight: bold;
+            color: #24313d;
+        }
+
+        input, select {
+            padding: 10px 12px;
+            border: 1px solid #cfd7df;
+            border-radius: 8px;
+            font-size: 14px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 12px 18px;
+            margin-top: 18px;
+            cursor: pointer;
+            border: none;
+            border-radius: 10px;
+            background: #2e7d32;
+            color: white;
+            font-size: 15px;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #256729;
+        }
+
+        .secondary-button {
+            background: #44576b;
+            margin-left: 10px;
+        }
+
+        .secondary-button:hover {
+            background: #374757;
+        }
+
+        .result {
+            font-weight: bold;
+            margin-top: 20px;
+            line-height: 1.8;
+            padding: 16px 18px;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            display: none;
+        }
+
+        .success {
+            color: #166534;
+            background: #ecfdf3;
+            border-color: #b7ebc6;
+        }
+
+        .error {
+            color: #b42318;
+            background: #fef3f2;
+            border-color: #f3c7c2;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .toolbar input {
+            max-width: 240px;
+        }
+
+        .order-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            margin-top: 10px;
+        }
+
+        .order-table th,
+        .order-table td {
+            padding: 10px 12px;
+            border: 1px solid #d8dee5;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .order-table th {
+            background: #f3f6f8;
+        }
+
+        footer {
+            background-color: #2e7d32;
+            color: white;
+            text-align: center;
+            padding: 15px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 950px) {
+            .page-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .content {
+                margin: 20px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="content">
+    <div class="page-header">
+        <div>
+            <h1 style="margin-bottom:0;">Warehouse Settlement</h1>
+            <p>Validate final shipment amount against previously authorized payment data.</p>
+        </div>
+        <a class="back-link" href="product_page.html">← Back to Product Page</a>
+    </div>
+
+    <div class="page-grid">
+        <div>
+            <div class="card">
+                <h2>Settle Order</h2>
+                <div class="form-grid">
+                    <label for="orderId">Order ID</label>
+                    <input type="text" id="orderId" placeholder="Enter order ID">
+
+                    <label for="finalAmount">Final Amount ($)</label>
+                    <input type="number" id="finalAmount" step="0.01" placeholder="Enter final settlement amount">
+                </div>
+
+                <button onclick="submitSettlement()">Submit Settlement</button>
+                <button class="secondary-button" onclick="loadAuthorizations()">Refresh Orders</button>
+
+                <div id="result" class="result"></div>
+            </div>
+        </div>
+
+        <div>
+            <div class="card">
+                <h2>Recent Authorizations</h2>
+
+                <div class="toolbar">
+                    <input type="text" id="searchOrder" placeholder="Search by Order ID" oninput="renderTable()">
+                    <select id="statusFilter" onchange="renderTable()">
+                        <option value="">All Statuses</option>
+                        <option value="AUTHORIZED">AUTHORIZED</option>
+                        <option value="FAILED_INSUFFICIENT_FUNDS">FAILED_INSUFFICIENT_FUNDS</option>
+                        <option value="FAILED_INVALID_CARD">FAILED_INVALID_CARD</option>
+                        <option value="FAILED_SYSTEM_ERROR">FAILED_SYSTEM_ERROR</option>
+                        <option value="FAILED">FAILED</option>
+                    </select>
+                </div>
+
+                <table class="order-table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Payment Status</th>
+                            <th>Authorized Amount</th>
+                            <th>Settlement Status</th>
+                            <th>Settlement Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="authorizationsBody">
+                        <tr><td colspan="5">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <p>Team 10 | Warehouse Settlement</p>
+</footer>
+
+<script>
+let allAuthorizations = [];
+
+async function loadAuthorizations() {
+    const tbody = document.getElementById("authorizationsBody");
+    tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
+
+    try {
+        const response = await fetch('/api/authorizations');
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            tbody.innerHTML = '<tr><td colspan="5">Could not load authorizations.</td></tr>';
+            return;
+        }
+
+        allAuthorizations = data.rows || [];
+        renderTable();
+    } catch (err) {
+        console.error('Error loading authorizations:', err);
+        tbody.innerHTML = '<tr><td colspan="5">Error loading authorizations.</td></tr>';
+    }
+}
+
+function renderTable() {
+    const tbody = document.getElementById("authorizationsBody");
+    const searchValue = document.getElementById("searchOrder").value.trim().toLowerCase();
+    const statusValue = document.getElementById("statusFilter").value;
+
+    const filtered = allAuthorizations.filter(row => {
+        const matchesSearch = !searchValue || String(row.order_id).toLowerCase().includes(searchValue);
+        const matchesStatus = !statusValue || row.payment_status === statusValue;
+        return matchesSearch && matchesStatus;
+    });
+
+    if (!filtered.length) {
+        tbody.innerHTML = '<tr><td colspan="5">No matching records found.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = filtered.map(row => `
+        <tr>
+            <td>${row.order_id}</td>
+            <td>${row.payment_status}</td>
+            <td>$${Number(row.authorization_amount).toFixed(2)}</td>
+            <td>${row.settlement_status || 'NOT_SETTLED'}</td>
+            <td>${row.settlement_amount !== null && row.settlement_amount !== undefined ? '$' + Number(row.settlement_amount).toFixed(2) : 'N/A'}</td>
+        </tr>
+    `).join('');
+}
+
+async function submitSettlement() {
+    const result = document.getElementById("result");
+    result.style.display = "block";
+
+    const orderId = document.getElementById("orderId").value.trim();
+    const finalAmount = parseFloat(document.getElementById("finalAmount").value);
+
+    if (!orderId) {
+        result.className = "result error";
+        result.innerHTML = "Order ID is required ✖";
+        return;
+    }
+
+    if (!Number.isFinite(finalAmount) || finalAmount < 0) {
+        result.className = "result error";
+        result.innerHTML = "Final amount must be a valid non-negative number ✖";
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/settle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId, finalAmount })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            result.className = "result error";
+            result.innerHTML = (data.message || "Settlement failed") + " ✖";
+            return;
+        }
+
+        result.className = "result success";
+        result.innerHTML =
+            "Settlement successful ✔<br>" +
+            "Order ID: " + data.orderId + "<br>" +
+            "Authorized Amount: $" + Number(data.authorizedAmount).toFixed(2) + "<br>" +
+            "Settlement Amount: $" + Number(data.settlementAmount).toFixed(2) + "<br>" +
+            "Settlement Status: " + data.settlementStatus + "<br>" +
+            "Message: " + data.message;
+
+        await loadAuthorizations();
+    } catch (err) {
+        console.error('Error submitting settlement:', err);
+        result.className = "result error";
+        result.innerHTML = "An error occurred while processing settlement ✖";
+    }
+}
+
+loadAuthorizations();
+</script>
+
+</body>
+</html>

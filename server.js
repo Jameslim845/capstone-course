@@ -28,7 +28,6 @@ function normalizeProviderDate(dateString) {
 
   const trimmed = dateString.trim();
 
-  // Match YYYY-MM-DDTHH:MM:SS(.sss)?
   const match = trimmed.match(
     /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?$/
   );
@@ -56,7 +55,6 @@ function normalizeProviderDate(dateString) {
 
   if (!isValid) return null;
 
-  // Return MySQL DATETIME format
   return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
 }
 
@@ -176,11 +174,23 @@ app.post('/api/authorize', async (req, res) => {
       }
     }
 
-    // 5) Map provider response
+    // 5) Distinguish expiration cases
+    let expirationStatus = 'MISSING';
+    const rawProviderExpiration = apiData?.TokenExpirationDate ?? null;
+    const authorizationExpiration = normalizeProviderDate(rawProviderExpiration);
+
+    if (rawProviderExpiration && authorizationExpiration) {
+      expirationStatus = 'VALID';
+    } else if (rawProviderExpiration && !authorizationExpiration) {
+      expirationStatus = 'INVALID';
+    } else {
+      expirationStatus = 'MISSING';
+    }
+
+    // 6) Map provider response
     let paymentStatus = 'FAILED';
-    let returnedToken = apiData?.AuthorizationToken || 'no_token';
-    let authorizationExpiration = normalizeProviderDate(apiData?.TokenExpirationDate);
-    let returnedAmount = Number(apiData?.AuthorizedAmount ?? 0);
+    const returnedToken = apiData?.AuthorizationToken || 'no_token';
+    const returnedAmount = Number(apiData?.AuthorizedAmount ?? 0);
 
     if (apiData?.Success === true) {
       paymentStatus = 'AUTHORIZED';
@@ -204,20 +214,23 @@ app.post('/api/authorize', async (req, res) => {
       transactionDate,
       authorizationAmount: finalStoredAmount,
       authorizationExpiration,
+      rawAuthorizationExpiration: rawProviderExpiration,
+      expirationStatus,
       authorizationToken: concatenatedToken,
       paymentStatus,
     });
 
-    // 6) Insert into DB
+    // 7) Insert into DB
     const [result] = await db.query(
       `INSERT INTO authorizations
-       (order_id, transaction_datetime, authorization_amount, authorization_expiration, authorization_token, payment_status)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+       (order_id, transaction_datetime, authorization_amount, authorization_expiration, raw_authorization_expiration, authorization_token, payment_status)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         orderId,
         transactionDate,
         finalStoredAmount,
         authorizationExpiration,
+        rawProviderExpiration,
         concatenatedToken,
         paymentStatus,
       ]
@@ -232,6 +245,8 @@ app.post('/api/authorize', async (req, res) => {
       authorizationAmount: finalStoredAmount,
       authorizationToken: concatenatedToken,
       authorizationExpiration,
+      rawAuthorizationExpiration: rawProviderExpiration,
+      expirationStatus,
       message: apiData?.Reason || apiData?.Error || ''
     });
 
@@ -245,7 +260,120 @@ app.post('/api/authorize', async (req, res) => {
 });
 
 // ------------------------------
-// 4) Start the server
+// 4) Warehouse Settlement Route
+// ------------------------------
+app.post('/api/settle', async (req, res) => {
+  try {
+    console.log('--- /api/settle called ---');
+    console.log('Settlement request body:', req.body);
+
+    const { orderId, finalAmount } = req.body;
+
+    if (!orderId || finalAmount === undefined || finalAmount === null) {
+      return res.status(400).json({
+        success: false,
+        message: 'orderId and finalAmount are required'
+      });
+    }
+
+    const numericFinalAmount = Number(finalAmount);
+
+    if (!Number.isFinite(numericFinalAmount) || numericFinalAmount < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'finalAmount must be a valid non-negative number'
+      });
+    }
+
+    const [rows] = await db.query(
+      `SELECT *
+       FROM authorizations
+       WHERE order_id = ?
+       ORDER BY id DESC
+       LIMIT 1`,
+      [orderId]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    const authRow = rows[0];
+
+    if (authRow.payment_status !== 'AUTHORIZED') {
+      return res.status(400).json({
+        success: false,
+        message: `Order cannot be settled because payment status is ${authRow.payment_status}`
+      });
+    }
+
+    if (
+      authRow.settlement_status === 'SETTLED_FULL' ||
+      authRow.settlement_status === 'SETTLED_PARTIAL'
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: `Order has already been settled with status ${authRow.settlement_status}`
+      });
+    }
+
+    const authorizedAmount = Number(authRow.authorization_amount);
+
+    if (numericFinalAmount > authorizedAmount) {
+      return res.status(400).json({
+        success: false,
+        message: `Settlement amount $${numericFinalAmount.toFixed(2)} exceeds authorized amount $${authorizedAmount.toFixed(2)}`
+      });
+    }
+
+    const settlementStatus =
+      numericFinalAmount === authorizedAmount ? 'SETTLED_FULL' : 'SETTLED_PARTIAL';
+
+    const settlementDate = new Date();
+
+    const [updateResult] = await db.query(
+      `UPDATE authorizations
+       SET settlement_status = ?,
+           settlement_amount = ?,
+           settlement_datetime = ?
+       WHERE id = ?`,
+      [
+        settlementStatus,
+        numericFinalAmount,
+        settlementDate,
+        authRow.id
+      ]
+    );
+
+    console.log('Settlement update result:', updateResult);
+
+    return res.json({
+      success: true,
+      orderId,
+      authorizedAmount,
+      settlementAmount: numericFinalAmount,
+      settlementStatus,
+      settlementDatetime: settlementDate,
+      message:
+        settlementStatus === 'SETTLED_FULL'
+          ? 'Order settled successfully for the full authorized amount.'
+          : 'Order settled successfully for a partial amount.'
+    });
+
+  } catch (err) {
+    console.error('Error in /api/settle:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
+// ------------------------------
+// 5) Start the server
 // ------------------------------
 const PORT = process.env.PORT || 3000;
 

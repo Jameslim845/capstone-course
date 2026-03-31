@@ -256,7 +256,6 @@
 
     <div id="selectedProductSummary" class="summary-box" style="display:none;"></div>
 
-    <!-- NORMAL CHECKOUT VIEW -->
     <div id="checkoutView" class="page-grid">
         <div>
             <div class="card">
@@ -346,7 +345,6 @@
         </div>
     </div>
 
-    <!-- SUCCESS CONFIRMATION VIEW -->
     <div id="confirmationView" class="confirmation-view">
         <div class="card">
             <h2>Order Confirmation</h2>
@@ -487,16 +485,25 @@ function maskCardNumber(cardNumber) {
     return "**** **** **** " + last4;
 }
 
+function getExpirationDisplay(data) {
+    if (data.expirationStatus === "VALID" && data.authorizationExpiration) {
+        return data.authorizationExpiration;
+    }
+
+    if (data.expirationStatus === "INVALID" && data.rawAuthorizationExpiration) {
+        return data.rawAuthorizationExpiration + " (provider returned invalid date)";
+    }
+
+    return "N/A";
+}
+
 function showConfirmationView(data, maskedCard) {
     const displayToken =
         data.authorizationToken && !data.authorizationToken.endsWith("_no_token")
             ? data.authorizationToken
             : "N/A";
 
-    const displayExpiration =
-        data.authorizationExpiration && data.authorizationExpiration !== "null"
-            ? data.authorizationExpiration
-            : "N/A (provider returned invalid date)";
+    const displayExpiration = getExpirationDisplay(data);
 
     document.getElementById("checkoutView").style.display = "none";
     document.getElementById("confirmationView").style.display = "block";
@@ -626,10 +633,7 @@ async function submitPayment() {
                 ? data.authorizationToken
                 : "N/A";
 
-        const displayExpiration =
-            data.authorizationExpiration && data.authorizationExpiration !== "null"
-                ? data.authorizationExpiration
-                : "N/A (provider returned invalid date)";
+        const displayExpiration = getExpirationDisplay(data);
 
         result.innerHTML =
             "Payment " + data.paymentStatus + " ✖<br>" +
