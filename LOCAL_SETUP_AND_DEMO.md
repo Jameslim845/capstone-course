@@ -60,7 +60,7 @@ npm install
 
 # ⚙️ STEP 3 — CREATE .env FILE
 
-In file explorer under your project folder, next to all the rest of the files like server.js and package.json, create a new text editor file, call it .env and paste this is it:
+In file explorer under your project folder, next to all the rest of the files like server.js and package.json, create a new text editor file, call it .env and paste this in it:
 
 PORT=3000
 OAUTH_TOKEN_URL=https://capstoneproject.proxy.beeceptor.com/oauth/token
