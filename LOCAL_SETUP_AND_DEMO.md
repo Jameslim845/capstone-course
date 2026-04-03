@@ -64,8 +64,11 @@ In file explorer under your project folder, next to all the rest of the files li
 
 PORT=3000
 OAUTH_TOKEN_URL=https://capstoneproject.proxy.beeceptor.com/oauth/token
+
 OAUTH_CLIENT_ID=ksuCapstone
+
 OAUTH_CLIENT_SECRET=P@ymentP@ss!
+
 AUTHORIZE_URL=https://capstoneproject.proxy.beeceptor.com/authorize
 
 ---
