@@ -1,33 +1,19 @@
-// server.js
-// ==============================
-// Main backend server for Capstone project
-// ==============================
-
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
-const db = require('./db');
 const axios = require('axios');
 const { getAccessToken } = require('./oauthTokenService');
+const dbPromise = require('./db');
 
 const app = express();
 
-// Allow JSON request bodies
 app.use(express.json());
-
-// Serve static front-end files from /public
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ------------------------------
-// Helper: Normalize provider date safely for MySQL
-// - Returns MySQL DATETIME string if valid
-// - Returns null if invalid or missing
-// ------------------------------
 function normalizeProviderDate(dateString) {
   if (!dateString || typeof dateString !== 'string') return null;
 
   const trimmed = dateString.trim();
-
   const match = trimmed.match(
     /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?$/
   );
@@ -35,7 +21,6 @@ function normalizeProviderDate(dateString) {
   if (!match) return null;
 
   const [, y, m, d, hh, mm, ss] = match;
-
   const year = Number(y);
   const month = Number(m);
   const day = Number(d);
@@ -58,25 +43,30 @@ function normalizeProviderDate(dateString) {
   return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
 }
 
-// ------------------------------
-// 1) Basic health check
-// ------------------------------
-app.get('/api/health', (req, res) => {
-  res.json({
-    ok: true,
-    message: 'Server is running',
-    dbName: process.env.DB_NAME || 'not set',
-  });
+app.get('/api/health', async (req, res) => {
+  try {
+    await dbPromise;
+    res.json({
+      ok: true,
+      message: 'Server is running',
+      databaseType: 'SQLite',
+      databaseFile: 'data/capstone_payments.db'
+    });
+  } catch (err) {
+    console.error('Error in /api/health:', err);
+    res.status(500).json({
+      ok: false,
+      message: 'Database not initialized'
+    });
+  }
 });
 
-// ------------------------------
-// 2) Helper route for debugging DB contents
-// ------------------------------
 app.get('/api/authorizations', async (req, res) => {
   try {
     console.log('--- /api/authorizations called ---');
+    const db = await dbPromise;
 
-    const [rows] = await db.query(
+    const rows = await db.all(
       'SELECT * FROM authorizations ORDER BY id DESC LIMIT 20'
     );
 
@@ -88,20 +78,9 @@ app.get('/api/authorizations', async (req, res) => {
   }
 });
 
-// ------------------------------
-// 3) Payment Authorization Route
-// ------------------------------
 app.post('/api/authorize', async (req, res) => {
   try {
     console.log('--- /api/authorize called ---');
-
-    console.log('DB CONFIG:', {
-      host: process.env.DB_HOST,
-      dbName: process.env.DB_NAME,
-      user: process.env.DB_USER,
-      port: process.env.DB_PORT,
-    });
-
     console.log('Request body:', req.body);
 
     const {
@@ -116,25 +95,23 @@ app.post('/api/authorize', async (req, res) => {
       cvv
     } = req.body;
 
-    if (!orderId || !amount) {
+    if (!orderId || amount === undefined || amount === null) {
       return res.status(400).json({
         success: false,
         message: 'orderId and amount are required',
       });
     }
 
-    const transactionDate = new Date();
+    const db = await dbPromise;
+    const transactionDate = new Date().toISOString();
     const requestedAmount = Number(amount);
 
-    // 1) Get OAuth token
     const accessToken = await getAccessToken();
 
-    // 2) Format expiry into month/year
     const [cardMonthRaw, cardYearRaw] = String(expiryDate || '').split('/');
     const cardMonth = cardMonthRaw || '';
     const cardYear = cardYearRaw ? `20${cardYearRaw}` : '';
 
-    // 3) Build Beeceptor request body to match prompt
     const authorizePayload = {
       OrderId: orderId,
       CardDetails: {
@@ -148,7 +125,6 @@ app.post('/api/authorize', async (req, res) => {
 
     console.log('Authorize payload:', authorizePayload);
 
-    // 4) Call Beeceptor authorize endpoint
     let apiData;
     try {
       const response = await axios.post(
@@ -174,7 +150,6 @@ app.post('/api/authorize', async (req, res) => {
       }
     }
 
-    // 5) Distinguish expiration cases
     let expirationStatus = 'MISSING';
     const rawProviderExpiration = apiData?.TokenExpirationDate ?? null;
     const authorizationExpiration = normalizeProviderDate(rawProviderExpiration);
@@ -187,7 +162,6 @@ app.post('/api/authorize', async (req, res) => {
       expirationStatus = 'MISSING';
     }
 
-    // 6) Map provider response
     let paymentStatus = 'FAILED';
     const returnedToken = apiData?.AuthorizationToken || 'no_token';
     const returnedAmount = Number(apiData?.AuthorizedAmount ?? 0);
@@ -220,11 +194,16 @@ app.post('/api/authorize', async (req, res) => {
       paymentStatus,
     });
 
-    // 7) Insert into DB
-    const [result] = await db.query(
-      `INSERT INTO authorizations
-       (order_id, transaction_datetime, authorization_amount, authorization_expiration, raw_authorization_expiration, authorization_token, payment_status)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    const result = await db.run(
+      `INSERT INTO authorizations (
+        order_id,
+        transaction_datetime,
+        authorization_amount,
+        authorization_expiration,
+        raw_authorization_expiration,
+        authorization_token,
+        payment_status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         orderId,
         transactionDate,
@@ -236,7 +215,7 @@ app.post('/api/authorize', async (req, res) => {
       ]
     );
 
-    console.log('Insert result from MySQL:', result);
+    console.log('Insert result from SQLite:', result);
 
     return res.json({
       success: true,
@@ -259,9 +238,6 @@ app.post('/api/authorize', async (req, res) => {
   }
 });
 
-// ------------------------------
-// 4) Warehouse Settlement Route
-// ------------------------------
 app.post('/api/settle', async (req, res) => {
   try {
     console.log('--- /api/settle called ---');
@@ -285,7 +261,8 @@ app.post('/api/settle', async (req, res) => {
       });
     }
 
-    const [rows] = await db.query(
+    const db = await dbPromise;
+    const authRow = await db.get(
       `SELECT *
        FROM authorizations
        WHERE order_id = ?
@@ -294,14 +271,12 @@ app.post('/api/settle', async (req, res) => {
       [orderId]
     );
 
-    if (!rows.length) {
+    if (!authRow) {
       return res.status(404).json({
         success: false,
         message: 'Order not found'
       });
     }
-
-    const authRow = rows[0];
 
     if (authRow.payment_status !== 'AUTHORIZED') {
       return res.status(400).json({
@@ -332,9 +307,9 @@ app.post('/api/settle', async (req, res) => {
     const settlementStatus =
       numericFinalAmount === authorizedAmount ? 'SETTLED_FULL' : 'SETTLED_PARTIAL';
 
-    const settlementDate = new Date();
+    const settlementDate = new Date().toISOString();
 
-    const [updateResult] = await db.query(
+    const updateResult = await db.run(
       `UPDATE authorizations
        SET settlement_status = ?,
            settlement_amount = ?,
@@ -372,11 +347,9 @@ app.post('/api/settle', async (req, res) => {
   }
 });
 
-// ------------------------------
-// 5) Start the server
-// ------------------------------
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  await dbPromise;
   console.log(`Backend listening at http://localhost:${PORT}`);
 });

@@ -1,18 +1,25 @@
 {
-  "name": "capstonebackend",
+  "name": "capstone-payment-system",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Capstone e-commerce payment authorization and warehouse settlement system using SQLite",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "dev": "node server.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "capstone",
+    "payments",
+    "sqlite",
+    "express"
+  ],
+  "author": "Group 10",
   "license": "ISC",
   "dependencies": {
-    "axios": "^1.14.0",
-    "dotenv": "^17.3.1",
-    "express": "^5.2.1",
-    "mysql2": "^3.17.4"
+    "axios": "^1.7.9",
+    "dotenv": "^17.0.0",
+    "express": "^4.21.2",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7"
   }
 }
