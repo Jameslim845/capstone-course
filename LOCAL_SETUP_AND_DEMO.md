@@ -7,7 +7,7 @@ This project **does NOT use MySQL Workbench anymore**.
 ✅ No MySQL Workbench  
 ✅ No database installation required  
 
-The database is now a **local file (SQLite)** that is automatically created.
+The database is now a **local file (SQLite)**.
 
 ---
 
@@ -60,7 +60,7 @@ npm install
 
 # ⚙️ STEP 3 — CREATE .env FILE
 
-Next to all the rest of the files like server.js and package.json, create a new text editor file, call it .env and paste this is it:
+In file explorer under your project folder, next to all the rest of the files like server.js and package.json, create a new text editor file, call it .env and paste this is it:
 
 PORT=3000
 OAUTH_TOKEN_URL=https://capstoneproject.proxy.beeceptor.com/oauth/token
@@ -93,7 +93,7 @@ data/capstone_payments.db
 
 # 👀 VIEW DATABASE
 
-Use DB Browser → click "Open Database" → find project folder → choose data folder -> capstone_payments.db (remember to refresh the page with the little green arrows after making changes or nothing will show up in the table)
+Use DB Browser → click "Open Database" → find project folder → choose "data" folder -> capstone_payments.db (remember to refresh the page with the little green arrows after making changes or nothing will show up in the table)
 
 ---
 
