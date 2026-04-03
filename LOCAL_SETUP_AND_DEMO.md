@@ -17,7 +17,7 @@ First Create a Project folder in file explorer, open it, and in the empty space 
 
 # 🧰 REQUIRED SOFTWARE
 
-## 1. Install Node.js
+##  Install Node.js
 Download and install:
 https://nodejs.org
 
@@ -30,13 +30,8 @@ npm -v
 Leave the terminal open youll be back (try not to open multiple terminals it gets confusing, if at some point something doesnt work try reloading the terminal)
 ---
 
-## 2. Install VS Code
-Download:
-https://code.visualstudio.com/
 
----
-
-## 3. Install "DB Browser for SQLite" from the internet using your browser
+##  Install "DB Browser for SQLite" from the internet using your browser
 Download:
 https://sqlitebrowser.org/
 
