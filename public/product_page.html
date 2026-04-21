@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Team 10 Inc. | Product Page</title>
+    <title>Shoes Inc. | Product Page</title>
     <style>
         :root {
             --bg: #eef2f5;
@@ -147,7 +147,7 @@
             font-size: clamp(2.2rem, 4vw, 4rem);
             line-height: 1.02;
             letter-spacing: -0.04em;
-            max-width: 10ch;
+            max-width: 12ch;
         }
 
         .hero-panel p {
@@ -474,8 +474,8 @@
     <div class="page-shell">
         <div class="topbar">
             <div class="brand-wrap">
-                <h1>Team 10 Inc. <span class="brand-mark">&copy;</span></h1>
-                <p>Sports performance, luxury design, and premium everyday footwear.</p>
+                <h1>Shoes Inc. <span class="brand-mark">&copy;</span></h1>
+                <h2>We'll knock your socks off!</h2>
                 <div class="welcome" id="welcomeText">Welcome</div>
             </div>
             <button class="btn btn-secondary" onclick="logout()">Log Out</button>
@@ -484,22 +484,23 @@
         <section class="hero">
             <div class="hero-panel">
                 <div class="eyebrow">Premium Footwear Catalog</div>
-                <h2>Find your next pair with a cleaner checkout flow.</h2>
+                <h2><strong>Performance</strong> Sports</h2>
+				<h2><strong>Luxury</strong> design</h2>
+				<h2><strong>Premium</strong> Everyday Footwear.</h2>
                 <p>
-                    Browse the Team 10 Inc. lineup, choose a shoe, and continue directly to checkout!
-                    The selected product is stored in <strong>sessionStorage</strong> so our checkout page can stay compatible with the current backend and MySQL setup.
+                    Browse the Shoes Inc. lineup.
                 </p>
                 <div class="hero-stats">
                     <div class="stat-pill">
                         <strong>10 Styles</strong>
-                        <span>Luxury + sport mix</span>
+                        <span>Luxury + Sport mix</span>
                     </div>
                     <div class="stat-pill">
                         <strong>$68–$425</strong>
                         <span>Wide pricing range</span>
                     </div>
                     <div class="stat-pill">
-                        <strong>Demo Ready</strong>
+                        <strong>Quick and Easy Checkout</strong>
                         <span>Login → Product → Payment</span>
                     </div>
                 </div>
@@ -507,10 +508,10 @@
 
             <aside class="hero-side-card">
                 <div>
-                    <h1>Welcome</h1>
-                    <p>
-                        View our product catalog below!
-                    </p>
+                    <h2>Welcome</h2>
+                    <h1>1.) View product catalog below</h1>
+					<h1>2.) Select any item</h1>
+					<h1>3.) Continue to checkout.</h1>
                 </div>
                 <div class="spotlight-box" style="padding:0; border-style:solid; border-width:1px; border-color: rgba(220, 227, 234, 0.95); background:#fff; overflow:hidden;">
                     <img src="exclusive_luxury_sneaker_collection.png" alt="Team 10 Inc. luxury sneaker collection promotional banner" style="width:100%; height:100%; min-height:190px; object-fit:cover; display:block;" />
@@ -522,12 +523,9 @@
             <div class="parallax-bg"></div>
             <div class="parallax-content">
                 <div class="parallax-copy">
-                    <div class="eyebrow" style="background: rgba(255,255,255,0.14); color: #f2d680;"></div>
-                    <h2>Built to bring excellent service to our clients</h2>
-                    <p>
-                        
-                    </p>
-                   
+                    <div class="eyebrow" style="background: rgba(255,255,255,0.14); color: #f2d680;">We Focus on Customer Experience</div>
+                    <h2>Our products are created to support you and your arches!</h2>
+                    
                 </div>
             </div>
         </section>
@@ -536,7 +534,7 @@
             <div class="section-heading">
                 <div>
                     <h2>Featured Collection</h2>
-                   
+                    <p>Select any product below to continue to the order and payment page.</p>
                 </div>
             </div>
             <div class="product-grid" id="productGrid"></div>
@@ -544,7 +542,7 @@
     </div>
 
     <footer>
-        Team 10 Inc. <span>&copy;</span> Premium Footwear Showcase
+        Shoes Inc. <span>&copy;</span> Premium Footwear Showcase
     </footer>
 
     <script>
@@ -651,26 +649,54 @@
             }
         ];
 
-    
-    function updateParallax() {
-        const section = document.querySelector('.parallax-section');
-        const bg = document.querySelector('.parallax-bg');
-        if (!section || !bg) return;
+        function generateOrderId() {
+            const randomPart = Math.random().toString(36).slice(2, 8).toUpperCase();
+            return `ORD-${randomPart}`;
+        }
 
-        const rect = section.getBoundingClientRect();
-        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+        function logout() {
+            sessionStorage.removeItem('loggedInUserEmail');
+            sessionStorage.removeItem('selectedProduct');
+            window.location.href = 'login_page1.html';
+        }
 
-        // progress from top entering viewport to bottom leaving viewport
-        const progress = (rect.top + rect.height) / (viewportHeight + rect.height);
-        const offset = (0.5 - progress) * 70; // stronger visible movement
+        function updateWelcomeText() {
+            const email = sessionStorage.getItem('loggedInUserEmail');
+            const welcomeText = document.getElementById('welcomeText');
+            if (email) {
+                welcomeText.textContent = `Signed in as: ${email}`;
+            } else {
+                welcomeText.textContent = 'Welcome';
+            }
+        }
 
-        bg.style.transform = `translate3d(0, ${offset}px, 0) scale(1.12)`;
-    }
+        function updateParallax() {
+            const section = document.querySelector('.parallax-section');
+            const bg = document.querySelector('.parallax-bg');
+            if (!section || !bg) return;
 
-    window.addEventListener('scroll', updateParallax, { passive: true });
-    window.addEventListener('resize', updateParallax);
+            const rect = section.getBoundingClientRect();
+            const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+            const progress = (rect.top + rect.height) / (viewportHeight + rect.height);
+            const offset = (0.5 - progress) * 70;
 
-    function buildProductCards() {
+            bg.style.transform = `translate3d(0, ${offset}px, 0) scale(1.12)`;
+        }
+
+        function selectProduct(product) {
+            const selectedProduct = {
+                orderId: generateOrderId(),
+                productId: product.id,
+                productName: product.name,
+                price: Number(product.price),
+                total: Number(product.price)
+            };
+
+            sessionStorage.setItem('selectedProduct', JSON.stringify(selectedProduct));
+            window.location.href = 'order_payment.html';
+        }
+
+        function buildProductCards() {
             const grid = document.getElementById('productGrid');
             grid.innerHTML = '';
 
@@ -688,54 +714,31 @@
                     <h3>${product.name}</h3>
                     <div class="product-desc">${product.description}</div>
                     <div class="product-meta">
-                        <div class="meta-pill">${product.category}</div>
-                        <div class="meta-pill">${product.material}</div>
+                        <span class="meta-pill">${product.category}</span>
+                        <span class="meta-pill">${product.material}</span>
                     </div>
                     <div class="price-row">
                         <div class="price-wrap">
-                            <small>Starting at</small>
+                            <small>Price</small>
                             <div class="price">$${product.price.toFixed(2)}</div>
                         </div>
                     </div>
-                    <button onclick="selectProduct('${product.id}')">Select Product</button>
+                    <button type="button" data-product-id="${product.id}">Select Product</button>
                 `;
+
+                const button = card.querySelector('button');
+                button.addEventListener('click', () => selectProduct(product));
+
                 grid.appendChild(card);
             });
         }
 
-        function selectProduct(productId) {
-            const product = products.find(item => item.id === productId);
-            if (!product) return;
+        window.addEventListener('scroll', updateParallax, { passive: true });
+        window.addEventListener('resize', updateParallax);
 
-            const subtotal = Number(product.price);
-            const total = Number((subtotal * 1.10).toFixed(2));
-            const orderId = 'ORD' + Math.random().toString(36).substring(2, 7).toUpperCase();
-
-            sessionStorage.setItem('selectedProduct', JSON.stringify({
-                orderId,
-                productId: product.id,
-                productName: product.name,
-                price: subtotal.toFixed(2),
-                total: total.toFixed(2)
-            }));
-
-            window.location.href = 'order_payment.html';
-        }
-
-        function logout() {
-            sessionStorage.removeItem('loggedInUserEmail');
-            sessionStorage.removeItem('selectedProduct');
-            window.location.href = 'login_page1.html';
-        }
-
-        (function initPage() {
-            const email = sessionStorage.getItem('loggedInUserEmail');
-            document.getElementById('welcomeText').textContent = email
-                ? `Signed in as ${email}`
-                : 'Signed in for demo checkout flow';
-
-            buildProductCards();
-        })();
+        updateWelcomeText();
+        buildProductCards();
+        updateParallax();
     </script>
 </body>
 </html>

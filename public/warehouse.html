@@ -45,7 +45,7 @@
 
         .page-grid {
             display: grid;
-            grid-template-columns: 0.9fr 1.1fr;
+            grid-template-columns: 0.95fr 1.05fr;
             gap: 28px;
             align-items: start;
         }
@@ -133,15 +133,14 @@
         }
 
         .toolbar {
-            display: flex;
+            display: grid;
+            grid-template-columns: 1.2fr 1fr 1fr;
             gap: 12px;
-            flex-wrap: wrap;
-            align-items: center;
             margin-bottom: 14px;
         }
 
-        .toolbar input {
-            max-width: 240px;
+        .table-wrap {
+            overflow-x: auto;
         }
 
         .order-table {
@@ -149,6 +148,8 @@
             border-collapse: collapse;
             background: white;
             margin-top: 10px;
+            font-size: 14px;
+            min-width: 1200px;
         }
 
         .order-table th,
@@ -156,11 +157,16 @@
             padding: 10px 12px;
             border: 1px solid #d8dee5;
             text-align: left;
-            font-size: 14px;
+            vertical-align: top;
         }
 
         .order-table th {
             background: #f3f6f8;
+        }
+
+        .small-text {
+            color: #5f6b7a;
+            font-size: 12px;
         }
 
         footer {
@@ -171,11 +177,17 @@
             font-weight: bold;
         }
 
-        @media (max-width: 950px) {
+        @media (max-width: 1100px) {
             .page-grid {
                 grid-template-columns: 1fr;
             }
 
+            .toolbar {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 950px) {
             .content {
                 margin: 20px;
             }
@@ -187,7 +199,6 @@
     </style>
 </head>
 <body>
-
 <div class="content">
     <div class="page-header">
         <div>
@@ -221,31 +232,47 @@
                 <h2>Recent Authorizations</h2>
 
                 <div class="toolbar">
-                    <input type="text" id="searchOrder" placeholder="Search by Order ID" oninput="renderTable()">
+                    <input type="text" id="searchOrder" placeholder="Search by Order ID or product" oninput="renderTable()">
+
                     <select id="statusFilter" onchange="renderTable()">
-                        <option value="">All Statuses</option>
+                        <option value="">All Payment Statuses</option>
                         <option value="AUTHORIZED">AUTHORIZED</option>
                         <option value="FAILED_INSUFFICIENT_FUNDS">FAILED_INSUFFICIENT_FUNDS</option>
                         <option value="FAILED_INVALID_CARD">FAILED_INVALID_CARD</option>
                         <option value="FAILED_SYSTEM_ERROR">FAILED_SYSTEM_ERROR</option>
                         <option value="FAILED">FAILED</option>
                     </select>
+
+                    <select id="sortBy" onchange="renderTable()">
+                        <option value="newest">Sort: Newest First</option>
+                        <option value="oldest">Sort: Oldest First</option>
+                        <option value="amount_desc">Sort: Amount High to Low</option>
+                        <option value="amount_asc">Sort: Amount Low to High</option>
+                        <option value="order_asc">Sort: Order ID A–Z</option>
+                        <option value="order_desc">Sort: Order ID Z–A</option>
+                    </select>
                 </div>
 
-                <table class="order-table">
-                    <thead>
-                        <tr>
-                            <th>Order ID</th>
-                            <th>Payment Status</th>
-                            <th>Authorized Amount</th>
-                            <th>Settlement Status</th>
-                            <th>Settlement Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody id="authorizationsBody">
-                        <tr><td colspan="5">Loading...</td></tr>
-                    </tbody>
-                </table>
+                <div class="table-wrap">
+                    <table class="order-table">
+                        <thead>
+                            <tr>
+                                <th>Order</th>
+                                <th>Product</th>
+                                <th>Payment Status</th>
+                                <th>Authorized Amount</th>
+                                <th>Authorization Expiration</th>
+                                <th>Local Transaction Time</th>
+                                <th>Settlement Status</th>
+                                <th>Settlement Amount</th>
+                                <th>Local Settlement Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="authorizationsBody">
+                            <tr><td colspan="9">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -256,109 +283,166 @@
 </footer>
 
 <script>
-let allAuthorizations = [];
+    let allAuthorizations = [];
 
-async function loadAuthorizations() {
-    const tbody = document.getElementById("authorizationsBody");
-    tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
+    async function loadAuthorizations() {
+        const tbody = document.getElementById('authorizationsBody');
+        tbody.innerHTML = '<tr><td colspan="9">Loading...</td></tr>';
 
-    try {
-        const response = await fetch('/api/authorizations');
-        const data = await response.json();
+        try {
+            const response = await fetch('/api/authorizations');
+            const data = await response.json();
 
-        if (!response.ok || !data.success) {
-            tbody.innerHTML = '<tr><td colspan="5">Could not load authorizations.</td></tr>';
-            return;
+            if (!response.ok || !data.success) {
+                tbody.innerHTML = '<tr><td colspan="9">Could not load authorizations.</td></tr>';
+                return;
+            }
+
+            allAuthorizations = Array.isArray(data.rows) ? data.rows : [];
+            renderTable();
+        } catch (err) {
+            console.error('Error loading authorizations:', err);
+            tbody.innerHTML = '<tr><td colspan="9">Error loading authorizations.</td></tr>';
+        }
+    }
+
+    function compareRows(a, b, sortBy) {
+        switch (sortBy) {
+            case 'oldest':
+                return Number(a.id || 0) - Number(b.id || 0);
+
+            case 'amount_desc':
+                return Number(b.authorization_amount || 0) - Number(a.authorization_amount || 0);
+
+            case 'amount_asc':
+                return Number(a.authorization_amount || 0) - Number(b.authorization_amount || 0);
+
+            case 'order_asc':
+                return String(a.order_id || '').localeCompare(String(b.order_id || ''));
+
+            case 'order_desc':
+                return String(b.order_id || '').localeCompare(String(a.order_id || ''));
+
+            case 'newest':
+            default:
+                return Number(b.id || 0) - Number(a.id || 0);
+        }
+    }
+
+    function formatLocalDateTime(isoString) {
+        if (!isoString) return 'N/A';
+
+        const date = new Date(isoString);
+
+        if (Number.isNaN(date.getTime())) {
+            return 'Invalid date';
         }
 
-        allAuthorizations = data.rows || [];
-        renderTable();
-    } catch (err) {
-        console.error('Error loading authorizations:', err);
-        tbody.innerHTML = '<tr><td colspan="5">Error loading authorizations.</td></tr>';
-    }
-}
-
-function renderTable() {
-    const tbody = document.getElementById("authorizationsBody");
-    const searchValue = document.getElementById("searchOrder").value.trim().toLowerCase();
-    const statusValue = document.getElementById("statusFilter").value;
-
-    const filtered = allAuthorizations.filter(row => {
-        const matchesSearch = !searchValue || String(row.order_id).toLowerCase().includes(searchValue);
-        const matchesStatus = !statusValue || row.payment_status === statusValue;
-        return matchesSearch && matchesStatus;
-    });
-
-    if (!filtered.length) {
-        tbody.innerHTML = '<tr><td colspan="5">No matching records found.</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = filtered.map(row => `
-        <tr>
-            <td>${row.order_id}</td>
-            <td>${row.payment_status}</td>
-            <td>$${Number(row.authorization_amount).toFixed(2)}</td>
-            <td>${row.settlement_status || 'NOT_SETTLED'}</td>
-            <td>${row.settlement_amount !== null && row.settlement_amount !== undefined ? '$' + Number(row.settlement_amount).toFixed(2) : 'N/A'}</td>
-        </tr>
-    `).join('');
-}
-
-async function submitSettlement() {
-    const result = document.getElementById("result");
-    result.style.display = "block";
-
-    const orderId = document.getElementById("orderId").value.trim();
-    const finalAmount = parseFloat(document.getElementById("finalAmount").value);
-
-    if (!orderId) {
-        result.className = "result error";
-        result.innerHTML = "Order ID is required ✖";
-        return;
-    }
-
-    if (!Number.isFinite(finalAmount) || finalAmount < 0) {
-        result.className = "result error";
-        result.innerHTML = "Final amount must be a valid non-negative number ✖";
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/settle', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId, finalAmount })
+        return date.toLocaleString([], {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            second: '2-digit'
         });
+    }
 
-        const data = await response.json();
+    function renderTable() {
+        const tbody = document.getElementById('authorizationsBody');
+        const searchValue = document.getElementById('searchOrder').value.trim().toLowerCase();
+        const statusValue = document.getElementById('statusFilter').value;
+        const sortBy = document.getElementById('sortBy').value;
 
-        if (!response.ok || !data.success) {
-            result.className = "result error";
-            result.innerHTML = (data.message || "Settlement failed") + " ✖";
+        const filtered = allAuthorizations
+            .filter(row => {
+                const orderText = String(row.order_id || '').toLowerCase();
+                const productText = `${row.product_name || ''} ${row.product_id || ''}`.toLowerCase();
+                const matchesSearch = !searchValue || orderText.includes(searchValue) || productText.includes(searchValue);
+                const matchesStatus = !statusValue || row.payment_status === statusValue;
+                return matchesSearch && matchesStatus;
+            })
+            .sort((a, b) => compareRows(a, b, sortBy));
+
+        if (!filtered.length) {
+            tbody.innerHTML = '<tr><td colspan="9">No matching records found.</td></tr>';
             return;
         }
 
-        result.className = "result success";
-        result.innerHTML =
-            "Settlement successful ✔<br>" +
-            "Order ID: " + data.orderId + "<br>" +
-            "Authorized Amount: $" + Number(data.authorizedAmount).toFixed(2) + "<br>" +
-            "Settlement Amount: $" + Number(data.settlementAmount).toFixed(2) + "<br>" +
-            "Settlement Status: " + data.settlementStatus + "<br>" +
-            "Message: " + data.message;
-
-        await loadAuthorizations();
-    } catch (err) {
-        console.error('Error submitting settlement:', err);
-        result.className = "result error";
-        result.innerHTML = "An error occurred while processing settlement ✖";
+        tbody.innerHTML = filtered.map(row => `
+            <tr>
+                <td>
+                    <strong>${row.order_id || 'N/A'}</strong><br>
+                    <span class="small-text">Row ID: ${row.id ?? 'N/A'}</span>
+                </td>
+                <td>
+                    ${row.product_name || 'N/A'}<br>
+                    <span class="small-text">${row.product_id || 'N/A'}</span>
+                </td>
+                <td>${row.payment_status || 'N/A'}</td>
+                <td>$${Number(row.authorization_amount || 0).toFixed(2)}</td>
+                <td>${row.authorization_expiration || 'N/A'}</td>
+                <td>${formatLocalDateTime(row.transaction_datetime)}</td>
+                <td>${row.settlement_status || 'NOT_SETTLED'}</td>
+                <td>${row.settlement_amount !== null && row.settlement_amount !== undefined ? '$' + Number(row.settlement_amount).toFixed(2) : 'N/A'}</td>
+                <td>${formatLocalDateTime(row.settlement_datetime)}</td>
+            </tr>
+        `).join('');
     }
-}
 
-loadAuthorizations();
+    async function submitSettlement() {
+        const result = document.getElementById('result');
+        result.style.display = 'block';
+
+        const orderId = document.getElementById('orderId').value.trim();
+        const finalAmount = parseFloat(document.getElementById('finalAmount').value);
+
+        if (!orderId) {
+            result.className = 'result error';
+            result.innerHTML = 'Order ID is required ✖';
+            return;
+        }
+
+        if (!Number.isFinite(finalAmount) || finalAmount < 0) {
+            result.className = 'result error';
+            result.innerHTML = 'Final amount must be a valid non-negative number ✖';
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/settle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId, finalAmount })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                result.className = 'result error';
+                result.innerHTML = (data.message || 'Settlement failed') + ' ✖';
+                return;
+            }
+
+            result.className = 'result success';
+            result.innerHTML =
+                'Settlement successful ✔<br>' +
+                'Order ID: ' + data.orderId + '<br>' +
+                'Authorized Amount: $' + Number(data.authorizedAmount).toFixed(2) + '<br>' +
+                'Settlement Amount: $' + Number(data.settlementAmount).toFixed(2) + '<br>' +
+                'Settlement Status: ' + data.settlementStatus + '<br>' +
+                'Local Settlement Time: ' + formatLocalDateTime(data.settlementDatetime);
+
+            document.getElementById('finalAmount').value = '';
+            loadAuthorizations();
+        } catch (err) {
+            console.error('Error submitting settlement:', err);
+            result.className = 'result error';
+            result.innerHTML = 'Could not reach settlement service ✖';
+        }
+    }
+
+    loadAuthorizations();
 </script>
-
 </body>
 </html>

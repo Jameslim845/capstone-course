@@ -10,42 +10,33 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-function normalizeProviderDate(dateString) {
-  if (!dateString || typeof dateString !== 'string') return null;
+function mapPaymentStatus(apiData) {
+  if (apiData?.Success === true) {
+    return 'AUTHORIZED';
+  }
 
-  const trimmed = dateString.trim();
-  const match = trimmed.match(
-    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?$/
-  );
+  const reason = String(apiData?.Reason || '').toLowerCase();
+  const error = String(apiData?.Error || '').toLowerCase();
 
-  if (!match) return null;
+  if (reason.includes('insufficient')) {
+    return 'FAILED_INSUFFICIENT_FUNDS';
+  }
 
-  const [, y, m, d, hh, mm, ss] = match;
-  const year = Number(y);
-  const month = Number(m);
-  const day = Number(d);
-  const hour = Number(hh);
-  const minute = Number(mm);
-  const second = Number(ss);
+  if (reason.includes('incorrect') || reason.includes('invalid')) {
+    return 'FAILED_INVALID_CARD';
+  }
 
-  const testDate = new Date(year, month - 1, day, hour, minute, second);
+  if (error || reason.includes('server')) {
+    return 'FAILED_SYSTEM_ERROR';
+  }
 
-  const isValid =
-    testDate.getFullYear() === year &&
-    testDate.getMonth() === month - 1 &&
-    testDate.getDate() === day &&
-    testDate.getHours() === hour &&
-    testDate.getMinutes() === minute &&
-    testDate.getSeconds() === second;
-
-  if (!isValid) return null;
-
-  return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
+  return 'FAILED';
 }
 
 app.get('/api/health', async (req, res) => {
   try {
     await dbPromise;
+
     res.json({
       ok: true,
       message: 'Server is running',
@@ -54,6 +45,7 @@ app.get('/api/health', async (req, res) => {
     });
   } catch (err) {
     console.error('Error in /api/health:', err);
+
     res.status(500).json({
       ok: false,
       message: 'Database not initialized'
@@ -67,14 +59,20 @@ app.get('/api/authorizations', async (req, res) => {
     const db = await dbPromise;
 
     const rows = await db.all(
-      'SELECT * FROM authorizations ORDER BY id DESC LIMIT 20'
+      `SELECT *
+       FROM authorizations
+       ORDER BY id DESC
+       LIMIT 50`
     );
 
     console.log('Fetched rows count:', rows.length);
     res.json({ success: true, rows });
   } catch (err) {
     console.error('Error in /api/authorizations:', err);
-    res.status(500).json({ success: false, message: 'Error fetching authorizations' });
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching authorizations'
+    });
   }
 });
 
@@ -85,6 +83,8 @@ app.post('/api/authorize', async (req, res) => {
 
     const {
       orderId,
+      productId,
+      productName,
       amount,
       cardNumber,
       expiryDate,
@@ -98,13 +98,28 @@ app.post('/api/authorize', async (req, res) => {
     if (!orderId || amount === undefined || amount === null) {
       return res.status(400).json({
         success: false,
-        message: 'orderId and amount are required',
+        message: 'orderId and amount are required'
+      });
+    }
+
+    if (!productId || !productName) {
+      return res.status(400).json({
+        success: false,
+        message: 'productId and productName are required'
+      });
+    }
+
+    const requestedAmount = Number(amount);
+
+    if (!Number.isFinite(requestedAmount) || requestedAmount < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'amount must be a valid non-negative number'
       });
     }
 
     const db = await dbPromise;
     const transactionDate = new Date().toISOString();
-    const requestedAmount = Number(amount);
 
     const accessToken = await getAccessToken();
 
@@ -126,6 +141,7 @@ app.post('/api/authorize', async (req, res) => {
     console.log('Authorize payload:', authorizePayload);
 
     let apiData;
+
     try {
       const response = await axios.post(
         process.env.AUTHORIZE_URL,
@@ -150,68 +166,53 @@ app.post('/api/authorize', async (req, res) => {
       }
     }
 
-    let expirationStatus = 'MISSING';
-    const rawProviderExpiration = apiData?.TokenExpirationDate ?? null;
-    const authorizationExpiration = normalizeProviderDate(rawProviderExpiration);
-
-    if (rawProviderExpiration && authorizationExpiration) {
-      expirationStatus = 'VALID';
-    } else if (rawProviderExpiration && !authorizationExpiration) {
-      expirationStatus = 'INVALID';
-    } else {
-      expirationStatus = 'MISSING';
-    }
-
-    let paymentStatus = 'FAILED';
+    const paymentStatus = mapPaymentStatus(apiData);
     const returnedToken = apiData?.AuthorizationToken || 'no_token';
     const returnedAmount = Number(apiData?.AuthorizedAmount ?? 0);
-
-    if (apiData?.Success === true) {
-      paymentStatus = 'AUTHORIZED';
-    } else if (apiData?.Reason?.toLowerCase().includes('insufficient')) {
-      paymentStatus = 'FAILED_INSUFFICIENT_FUNDS';
-    } else if (apiData?.Reason?.toLowerCase().includes('incorrect')) {
-      paymentStatus = 'FAILED_INVALID_CARD';
-    } else if (apiData?.Error) {
-      paymentStatus = 'FAILED_SYSTEM_ERROR';
-    }
 
     const finalStoredAmount =
       apiData?.Success === true
         ? (Number.isFinite(returnedAmount) ? returnedAmount : requestedAmount)
         : 0;
 
+    const authorizationExpiration =
+      apiData?.TokenExpirationDate !== undefined && apiData?.TokenExpirationDate !== null
+        ? String(apiData.TokenExpirationDate)
+        : null;
+
     const concatenatedToken = `${orderId}_${returnedToken}`;
 
     console.log('About to insert row into authorizations:', {
       orderId,
+      productId,
+      productName,
       transactionDate,
       authorizationAmount: finalStoredAmount,
       authorizationExpiration,
-      rawAuthorizationExpiration: rawProviderExpiration,
-      expirationStatus,
       authorizationToken: concatenatedToken,
-      paymentStatus,
+      paymentStatus
     });
 
     const result = await db.run(
       `INSERT INTO authorizations (
         order_id,
+        product_id,
+        product_name,
         transaction_datetime,
         authorization_amount,
         authorization_expiration,
-        raw_authorization_expiration,
         authorization_token,
         payment_status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         orderId,
+        productId,
+        productName,
         transactionDate,
         finalStoredAmount,
         authorizationExpiration,
-        rawProviderExpiration,
         concatenatedToken,
-        paymentStatus,
+        paymentStatus
       ]
     );
 
@@ -220,20 +221,20 @@ app.post('/api/authorize', async (req, res) => {
     return res.json({
       success: true,
       orderId,
+      productId,
+      productName,
       paymentStatus,
       authorizationAmount: finalStoredAmount,
       authorizationToken: concatenatedToken,
       authorizationExpiration,
-      rawAuthorizationExpiration: rawProviderExpiration,
-      expirationStatus,
       message: apiData?.Reason || apiData?.Error || ''
     });
-
   } catch (err) {
     console.error('Error in /api/authorize:', err);
+
     return res.status(500).json({
       success: false,
-      message: 'Internal server error',
+      message: 'Internal server error'
     });
   }
 });
@@ -262,6 +263,7 @@ app.post('/api/settle', async (req, res) => {
     }
 
     const db = await dbPromise;
+
     const authRow = await db.get(
       `SELECT *
        FROM authorizations
@@ -328,6 +330,8 @@ app.post('/api/settle', async (req, res) => {
     return res.json({
       success: true,
       orderId,
+      productId: authRow.product_id,
+      productName: authRow.product_name,
       authorizedAmount,
       settlementAmount: numericFinalAmount,
       settlementStatus,
@@ -337,9 +341,9 @@ app.post('/api/settle', async (req, res) => {
           ? 'Order settled successfully for the full authorized amount.'
           : 'Order settled successfully for a partial amount.'
     });
-
   } catch (err) {
     console.error('Error in /api/settle:', err);
+
     return res.status(500).json({
       success: false,
       message: 'Internal server error'

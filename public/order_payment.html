@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order and Payment</title>
-
     <style>
         html, body {
             height: 100%;
@@ -55,7 +54,7 @@
 
         .page-grid {
             display: grid;
-            grid-template-columns: 1.2fr 0.8fr;
+            grid-template-columns: 1.25fr 0.75fr;
             gap: 28px;
             align-items: start;
         }
@@ -86,7 +85,7 @@
             color: #24313d;
         }
 
-        input, select {
+        input {
             padding: 10px 12px;
             border: 1px solid #cfd7df;
             border-radius: 8px;
@@ -107,8 +106,13 @@
             min-width: 18px;
         }
 
-        .valid-check { color: green; }
-        .invalid-check { color: red; }
+        .valid-check {
+            color: green;
+        }
+
+        .invalid-check {
+            color: red;
+        }
 
         button {
             padding: 12px 18px;
@@ -132,24 +136,6 @@
 
         .secondary-button:hover {
             background: #374757;
-        }
-
-        .order-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            margin-top: 10px;
-        }
-
-        .order-table th,
-        .order-table td {
-            padding: 10px 12px;
-            border: 1px solid #d8dee5;
-            text-align: left;
-        }
-
-        .order-table th {
-            background: #f3f6f8;
         }
 
         .order-summary {
@@ -176,6 +162,7 @@
             padding: 16px 18px;
             border-radius: 12px;
             border: 1px solid transparent;
+            display: none;
         }
 
         .success {
@@ -218,6 +205,11 @@
             margin-top: 20px;
         }
 
+        .small-text {
+            color: #5f6b7a;
+            font-size: 12px;
+        }
+
         footer {
             background-color: #2e7d32;
             color: white;
@@ -241,15 +233,12 @@
         }
     </style>
 </head>
-
 <body>
-
 <div class="content">
-
     <div class="page-header">
         <div>
             <h1 style="margin-bottom:0;">E-Commerce Order and Payment</h1>
-            <p>Complete checkout for the product selected on the landing page.</p>
+            <p>Complete checkout for the product selected on the product page.</p>
         </div>
         <a class="back-link" href="product_page.html">← Back to Product Page</a>
     </div>
@@ -275,21 +264,15 @@
             <div class="card">
                 <h2>Card Details</h2>
                 <div class="form-grid">
-                    <label for="cardType">Card Type</label>
-                    <select id="cardType" required>
-                        <option value="">Select Card Type</option>
-                        <option value="visa">Visa</option>
-                        <option value="mastercard">MasterCard</option>
-                        <option value="amex">American Express</option>
-                        <option value="discover">Discover</option>
-                    </select>
+                    <label for="cardType">Detected Card Type</label>
+                    <input type="text" id="cardType" readonly placeholder="Type card number to detect">
 
                     <label for="cardName">Name on Card</label>
                     <input type="text" id="cardName" maxlength="50">
 
                     <label for="cardNumber">Card Number</label>
                     <div class="card-number-row">
-                        <input type="text" id="cardNumber" maxlength="16" placeholder="16-digit card number" oninput="validateCardNumber(this)">
+                        <input type="text" id="cardNumber" maxlength="19" placeholder="Card number" oninput="handleCardNumberInput(this)">
                         <span id="cardIcon"></span>
                     </div>
 
@@ -297,7 +280,7 @@
                     <input type="text" id="expiryDate" maxlength="5" placeholder="MM/YY" oninput="formatExpiry(this)">
 
                     <label for="cvv">CVV</label>
-                    <input type="password" id="cvv" maxlength="4" pattern="[0-9]{3,4}">
+                    <input type="password" id="cvv" maxlength="4" placeholder="3 or 4 digits">
 
                     <label for="zipcode">Billing Zip Code</label>
                     <input type="text" id="zipcode" maxlength="5" placeholder="5-digit ZIP">
@@ -307,7 +290,7 @@
                 </div>
 
                 <button onclick="submitPayment()">Submit Payment</button>
-                <div id="result" class="result" style="display:none;"></div>
+                <div id="result" class="result"></div>
             </div>
         </div>
 
@@ -317,7 +300,17 @@
                 <div class="order-summary">
                     <div class="summary-item">
                         <strong>Order ID</strong>
-                        <input type="text" id="orderId" maxlength="10" placeholder="Max 10 characters" required>
+                        <input type="text" id="orderId" readonly>
+                    </div>
+
+                    <div class="summary-item">
+                        <strong>Product ID</strong>
+                        <input type="text" id="productId" readonly>
+                    </div>
+
+                    <div class="summary-item">
+                        <strong>Product Name</strong>
+                        <input type="text" id="productName" readonly>
                     </div>
 
                     <div class="summary-item">
@@ -331,17 +324,6 @@
                     </div>
                 </div>
             </div>
-
-            <div class="card">
-                <h2>Stored Orders</h2>
-                <table id="storedOrdersTable" class="order-table">
-                    <tr>
-                        <th>Order ID</th>
-                        <th>Price</th>
-                        <th>Total</th>
-                    </tr>
-                </table>
-            </div>
         </div>
     </div>
 
@@ -354,6 +336,11 @@
                 <div class="confirmation-row">
                     <strong>Order ID</strong>
                     <span id="confirmOrderId"></span>
+                </div>
+
+                <div class="confirmation-row">
+                    <strong>Product</strong>
+                    <span id="confirmProduct"></span>
                 </div>
 
                 <div class="confirmation-row">
@@ -374,16 +361,21 @@
                 <div class="confirmation-row">
                     <strong>Authorization Expiration</strong>
                     <span id="confirmExpiration"></span>
+                    <div id="confirmExpirationLocal" class="small-text"></div>
+                </div>
+
+                <div class="confirmation-row">
+                    <strong>Local Transaction Time</strong>
+                    <span id="confirmTransactionTime"></span>
                 </div>
             </div>
 
             <div class="confirmation-actions">
                 <button onclick="window.location.href='product_page.html'">Back to Product Page</button>
-                <button class="secondary-button" onclick="window.location.reload()">Start New Checkout</button>
+                <button class="secondary-button" onclick="startNewCheckoutAttempt()">Start New Checkout</button>
             </div>
         </div>
     </div>
-
 </div>
 
 <footer>
@@ -391,269 +383,342 @@
 </footer>
 
 <script>
-function addVisualOrderRow(orderId, price, total) {
-    const table = document.getElementById("storedOrdersTable");
-    const row = table.insertRow();
-    row.insertCell(0).innerHTML = orderId;
-    row.insertCell(1).innerHTML = "$" + Number(price).toFixed(2);
-    row.insertCell(2).innerHTML = "$" + Number(total).toFixed(2);
-}
+    function generateOrderId() {
+        const randomPart = Math.random().toString(36).slice(2, 8).toUpperCase();
+        return `ORD-${randomPart}`;
+    }
 
-function populateOrderFields(orderId, price, total) {
-    document.getElementById("orderId").value = orderId;
-    document.getElementById("price").value = Number(price).toFixed(2);
-    document.getElementById("total").value = Number(total).toFixed(2);
-    document.getElementById("amount").value = Number(total).toFixed(2);
-}
+    function getStoredSelection() {
+        const raw = sessionStorage.getItem('selectedProduct');
+        if (!raw) return null;
 
-function loadSelectedProduct() {
-    const raw = sessionStorage.getItem("selectedProduct");
-    if (!raw) return;
+        try {
+            return JSON.parse(raw);
+        } catch (error) {
+            console.error('Could not parse selectedProduct from sessionStorage', error);
+            return null;
+        }
+    }
 
-    try {
-        const selected = JSON.parse(raw);
-        if (!selected.orderId || !selected.price || !selected.total) return;
+    function saveStoredSelection(selection) {
+        sessionStorage.setItem('selectedProduct', JSON.stringify(selection));
+    }
 
-        populateOrderFields(selected.orderId, selected.price, selected.total);
-        addVisualOrderRow(selected.orderId, selected.price, selected.total);
+    function populateOrderFields(selection) {
+        document.getElementById('orderId').value = selection.orderId || '';
+        document.getElementById('productId').value = selection.productId || '';
+        document.getElementById('productName').value = selection.productName || '';
+        document.getElementById('price').value = Number(selection.price || 0).toFixed(2);
+        document.getElementById('total').value = Number(selection.total || 0).toFixed(2);
+        document.getElementById('amount').value = Number(selection.total || 0).toFixed(2);
+    }
 
-        const summary = document.getElementById("selectedProductSummary");
-        summary.style.display = "block";
+    function showSelectedProductSummary(selection) {
+        const summary = document.getElementById('selectedProductSummary');
+        summary.style.display = 'block';
         summary.innerHTML = `
-            <strong>Selected Product:</strong> ${selected.productName || 'Product'}<br>
-            <strong>Product ID:</strong> ${selected.productId || 'N/A'}<br>
-            <strong>Checkout Total:</strong> $${Number(selected.total).toFixed(2)}
+            <strong>Selected Product:</strong> ${selection.productName || 'N/A'}<br>
+            <strong>Product ID:</strong> ${selection.productId || 'N/A'}<br>
+            <strong>Current Checkout Attempt:</strong> ${selection.orderId || 'N/A'}<br>
+            <strong>Checkout Total:</strong> $${Number(selection.total || 0).toFixed(2)}
         `;
-    } catch (error) {
-        console.error("Could not read selected product from sessionStorage", error);
     }
-}
 
-function formatExpiry(input) {
-    let value = input.value.replace(/\D/g, '');
-    if (value.length >= 3) {
-        input.value = value.substring(0,2) + "/" + value.substring(2,4);
-    } else {
-        input.value = value;
+    function initializeCheckout() {
+        const selected = getStoredSelection();
+
+        if (!selected || !selected.productId || !selected.productName) {
+            alert('No product is currently selected. Please return to the product page.');
+            window.location.href = 'product_page.html';
+            return;
+        }
+
+        selected.orderId = generateOrderId();
+        selected.total = Number(selected.price || 0);
+        saveStoredSelection(selected);
+
+        populateOrderFields(selected);
+        showSelectedProductSummary(selected);
     }
-}
 
-function validateCardNumber(input) {
-    input.value = input.value.replace(/\D/g, '');
-    const icon = document.getElementById("cardIcon");
+    function startNewCheckoutAttempt() {
+        window.location.reload();
+    }
 
-    if (input.value.length === 16) {
-        icon.innerHTML = "✔";
-        icon.className = "valid-check";
-        return true;
-    } else {
-        icon.innerHTML = "✖";
-        icon.className = "invalid-check";
+    function formatExpiry(input) {
+        let value = input.value.replace(/\D/g, '').slice(0, 4);
+
+        if (value.length >= 3) {
+            input.value = value.substring(0, 2) + '/' + value.substring(2);
+        } else {
+            input.value = value;
+        }
+    }
+
+    function detectCardType(cardDigits) {
+        if (/^4\d{12}(\d{3})?$/.test(cardDigits)) return 'Visa';
+        if (/^5[1-5]\d{14}$/.test(cardDigits)) return 'MasterCard';
+        if (/^3[47]\d{13}$/.test(cardDigits)) return 'American Express';
+        if (/^6(?:011|5\d{2})\d{12}$/.test(cardDigits)) return 'Discover';
+        return '';
+    }
+
+    function formatCardNumberByType(cardDigits, cardType) {
+        if (cardType === 'American Express') {
+            const parts = [];
+            if (cardDigits.length > 0) parts.push(cardDigits.substring(0, 4));
+            if (cardDigits.length > 4) parts.push(cardDigits.substring(4, 10));
+            if (cardDigits.length > 10) parts.push(cardDigits.substring(10, 15));
+            return parts.join(' ');
+        }
+
+        return cardDigits.replace(/(.{4})/g, '$1 ').trim();
+    }
+
+    function handleCardNumberInput(input) {
+        let digits = input.value.replace(/\D/g, '').slice(0, 16);
+        let cardType = detectCardType(digits);
+
+        if (cardType === 'American Express') {
+            digits = digits.slice(0, 15);
+        }
+
+        cardType = detectCardType(digits);
+        input.value = formatCardNumberByType(digits, cardType);
+        document.getElementById('cardType').value = cardType || '';
+
+        const icon = document.getElementById('cardIcon');
+        const isValidLength =
+            (cardType === 'American Express' && digits.length === 15) ||
+            (cardType !== 'American Express' && cardType !== '' && digits.length === 16);
+
+        if (isValidLength) {
+            icon.innerHTML = '✔';
+            icon.className = 'valid-check';
+            return true;
+        }
+
+        icon.innerHTML = digits.length > 0 ? '✖' : '';
+        icon.className = 'invalid-check';
         return false;
     }
-}
 
-function validateExpiration() {
-    const expiry = document.getElementById("expiryDate").value;
-    const parts = expiry.split("/");
-    if (parts.length !== 2) return false;
-
-    const month = parseInt(parts[0]);
-    const year = parseInt("20" + parts[1]);
-
-    if (isNaN(month) || month < 1 || month > 12 || isNaN(year)) return false;
-
-    const today = new Date();
-    const expDate = new Date(year, month);
-
-    return expDate > today;
-}
-
-function validateZip() {
-    const zip = document.getElementById("zipcode").value;
-    return /^[0-9]{5}$/.test(zip);
-}
-
-function validateCVV() {
-    const cvv = document.getElementById("cvv").value.trim();
-    return /^[0-9]{3,4}$/.test(cvv);
-}
-
-function maskCardNumber(cardNumber) {
-    const cleaned = cardNumber.replace(/\D/g, "");
-    const last4 = cleaned.slice(-4);
-    return "**** **** **** " + last4;
-}
-
-function getExpirationDisplay(data) {
-    if (data.expirationStatus === "VALID" && data.authorizationExpiration) {
-        return data.authorizationExpiration;
+    function getCleanCardDigits() {
+        return document.getElementById('cardNumber').value.replace(/\D/g, '');
     }
 
-    if (data.expirationStatus === "INVALID" && data.rawAuthorizationExpiration) {
-        return data.rawAuthorizationExpiration + " (provider returned invalid date)";
+    function validateCardNumber() {
+        const digits = getCleanCardDigits();
+        const cardType = document.getElementById('cardType').value;
+
+        if (!cardType) return false;
+
+        if (cardType === 'American Express') {
+            return digits.length === 15;
+        }
+
+        return digits.length === 16;
     }
 
-    return "N/A";
-}
+    function validateExpiration() {
+        const expiry = document.getElementById('expiryDate').value.trim();
+        const parts = expiry.split('/');
 
-function showConfirmationView(data, maskedCard) {
-    const displayToken =
-        data.authorizationToken && !data.authorizationToken.endsWith("_no_token")
-            ? data.authorizationToken
-            : "N/A";
+        if (parts.length !== 2) return false;
 
-    const displayExpiration = getExpirationDisplay(data);
+        const month = parseInt(parts[0], 10);
+        const year = parseInt('20' + parts[1], 10);
 
-    document.getElementById("checkoutView").style.display = "none";
-    document.getElementById("confirmationView").style.display = "block";
+        if (Number.isNaN(month) || Number.isNaN(year) || month < 1 || month > 12) {
+            return false;
+        }
 
-    document.getElementById("confirmationResult").innerHTML =
-        "Payment " + data.paymentStatus + " ✔";
+        const now = new Date();
+        const expirationDate = new Date(year, month);
 
-    document.getElementById("confirmOrderId").textContent = data.orderId;
-    document.getElementById("confirmCharged").textContent = "$" + Number(data.authorizationAmount).toFixed(2);
-    document.getElementById("confirmMaskedCard").textContent = maskedCard;
-    document.getElementById("confirmAuthToken").textContent = displayToken;
-    document.getElementById("confirmExpiration").textContent = displayExpiration;
-}
-
-async function submitPayment() {
-    const result = document.getElementById("result");
-    result.style.display = "block";
-
-    const orderId = document.getElementById("orderId").value.trim();
-    const total = parseFloat(document.getElementById("total").value);
-    const paymentAmount = parseFloat(document.getElementById("amount").value);
-
-    const firstName = document.getElementById("firstName").value.trim();
-    const lastName = document.getElementById("lastName").value.trim();
-    const address = document.getElementById("address").value.trim();
-
-    const cardType = document.getElementById("cardType").value;
-    const cardName = document.getElementById("cardName").value.trim();
-    const cardNumber = document.getElementById("cardNumber").value;
-    const expiryDate = document.getElementById("expiryDate").value;
-    const cvv = document.getElementById("cvv").value.trim();
-    const zip = document.getElementById("zipcode").value;
-
-    if (!orderId) {
-        result.innerHTML = "Order ID is required ✖";
-        result.className = "result error";
-        return;
+        return expirationDate > now;
     }
 
-    if (isNaN(total) || isNaN(paymentAmount) || paymentAmount !== total) {
-        result.innerHTML = "Payment amount must match total ✖";
-        result.className = "result error";
-        return;
+    function validateZip() {
+        return /^[0-9]{5}$/.test(document.getElementById('zipcode').value.trim());
     }
 
-    if (!firstName || !lastName || !address) {
-        result.innerHTML = "Customer information is required ✖";
-        result.className = "result error";
-        return;
+    function validateCVV() {
+        return /^[0-9]{3,4}$/.test(document.getElementById('cvv').value.trim());
     }
 
-    if (!cardType) {
-        result.innerHTML = "Card type is required ✖";
-        result.className = "result error";
-        return;
+    function maskCardNumber(cardNumber) {
+        const last4 = cardNumber.slice(-4);
+        return '**** **** **** ' + last4;
     }
 
-    if (!cardName) {
-        result.innerHTML = "Name on card is required ✖";
-        result.className = "result error";
-        return;
-    }
+    function formatLocalDateTime(isoString) {
+        if (!isoString) return 'N/A';
 
-    if (!validateCardNumber(document.getElementById("cardNumber"))) {
-        result.innerHTML = "Invalid card number ✖";
-        result.className = "result error";
-        return;
-    }
+        const date = new Date(isoString);
 
-    if (!validateExpiration()) {
-        result.innerHTML = "Card is expired ✖";
-        result.className = "result error";
-        return;
-    }
+        if (Number.isNaN(date.getTime())) {
+            return null;
+        }
 
-    if (!validateCVV()) {
-        result.innerHTML = "Invalid CVV ✖";
-        result.className = "result error";
-        return;
-    }
-
-    if (!validateZip()) {
-        result.innerHTML = "Invalid ZIP Code ✖";
-        result.className = "result error";
-        return;
-    }
-
-    const payload = {
-        orderId,
-        amount: paymentAmount,
-        cardType,
-        cardName,
-        cardNumber,
-        expiryDate,
-        cvv,
-        zip,
-        firstName,
-        lastName,
-        address
-    };
-
-    try {
-        const response = await fetch('/api/authorize', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+        return date.toLocaleString([], {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            second: '2-digit'
         });
-
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-            result.innerHTML = "Authorization failed: " + (data.message || "Unknown error") + " ✖";
-            result.className = "result error";
-            return;
-        }
-
-        const maskedCard = maskCardNumber(cardNumber);
-        const isApproved = data.paymentStatus === "AUTHORIZED";
-
-        if (isApproved) {
-            showConfirmationView(data, maskedCard);
-            return;
-        }
-
-        const displayToken =
-            data.authorizationToken && !data.authorizationToken.endsWith("_no_token")
-                ? data.authorizationToken
-                : "N/A";
-
-        const displayExpiration = getExpirationDisplay(data);
-
-        result.innerHTML =
-            "Payment " + data.paymentStatus + " ✖<br>" +
-            "Order ID: " + data.orderId + "<br>" +
-            "Charged: $" + Number(data.authorizationAmount).toFixed(2) + "<br>" +
-            "Masked Card: " + maskedCard + "<br>" +
-            "Auth Token: " + displayToken + "<br>" +
-            "Authorization Expiration: " + displayExpiration +
-            (data.message ? "<br>Message: " + data.message : "");
-
-        result.className = "result error";
-    } catch (err) {
-        console.error('Error calling backend:', err);
-        result.innerHTML = "An error occurred while processing payment ✖";
-        result.className = "result error";
     }
-}
 
-loadSelectedProduct();
+    function showError(message) {
+        const result = document.getElementById('result');
+        result.style.display = 'block';
+        result.className = 'result error';
+        result.innerHTML = message + ' ✖';
+    }
+
+    function showConfirmationView(data, maskedCard, selected) {
+        const displayToken =
+            data.authorizationToken && !String(data.authorizationToken).endsWith('_no_token')
+                ? data.authorizationToken
+                : 'N/A';
+
+        const displayExpiration = data.authorizationExpiration || 'N/A';
+        const localExpiration = formatLocalDateTime(data.authorizationExpiration);
+        const localTransactionTime = formatLocalDateTime(new Date().toISOString());
+        const isAuthorized = data.paymentStatus === 'AUTHORIZED';
+
+        document.getElementById('checkoutView').style.display = 'none';
+        document.getElementById('confirmationView').style.display = 'block';
+
+        const confirmationResult = document.getElementById('confirmationResult');
+        confirmationResult.className = isAuthorized ? 'result success' : 'result error';
+        confirmationResult.innerHTML = isAuthorized
+            ? `Payment ${data.paymentStatus} ✔`
+            : `Payment ${data.paymentStatus} ✖`;
+
+        document.getElementById('confirmOrderId').textContent = data.orderId || 'N/A';
+        document.getElementById('confirmProduct').textContent =
+            `${selected.productName || 'N/A'} (${selected.productId || 'N/A'})`;
+        document.getElementById('confirmCharged').textContent =
+            '$' + Number(data.authorizationAmount || 0).toFixed(2);
+        document.getElementById('confirmMaskedCard').textContent = maskedCard;
+        document.getElementById('confirmAuthToken').textContent = displayToken;
+        document.getElementById('confirmExpiration').textContent = displayExpiration;
+        document.getElementById('confirmExpirationLocal').textContent =
+            localExpiration ? `Local readable time: ${localExpiration}` : 'Local readable time: not available for this provider value';
+        document.getElementById('confirmTransactionTime').textContent = localTransactionTime || 'N/A';
+    }
+
+    async function submitPayment() {
+        const selected = getStoredSelection();
+        const orderId = document.getElementById('orderId').value.trim();
+        const productId = document.getElementById('productId').value.trim();
+        const productName = document.getElementById('productName').value.trim();
+        const total = parseFloat(document.getElementById('total').value);
+        const paymentAmount = parseFloat(document.getElementById('amount').value);
+
+        const firstName = document.getElementById('firstName').value.trim();
+        const lastName = document.getElementById('lastName').value.trim();
+        const address = document.getElementById('address').value.trim();
+
+        const cardType = document.getElementById('cardType').value.trim();
+        const cardName = document.getElementById('cardName').value.trim();
+        const cardNumber = getCleanCardDigits();
+        const expiryDate = document.getElementById('expiryDate').value.trim();
+        const cvv = document.getElementById('cvv').value.trim();
+        const zip = document.getElementById('zipcode').value.trim();
+
+        if (!orderId) {
+            showError('Order ID is required');
+            return;
+        }
+
+        if (!productId || !productName) {
+            showError('Product information is missing');
+            return;
+        }
+
+        if (Number.isNaN(total) || Number.isNaN(paymentAmount) || paymentAmount !== total) {
+            showError('Payment amount must match total');
+            return;
+        }
+
+        if (!firstName || !lastName || !address) {
+            showError('Customer information is required');
+            return;
+        }
+
+        if (!cardType) {
+            showError('Valid card type could not be detected');
+            return;
+        }
+
+        if (!cardName) {
+            showError('Name on card is required');
+            return;
+        }
+
+        if (!validateCardNumber()) {
+            showError('Invalid card number');
+            return;
+        }
+
+        if (!validateExpiration()) {
+            showError('Card is expired');
+            return;
+        }
+
+        if (!validateCVV()) {
+            showError('Invalid CVV');
+            return;
+        }
+
+        if (!validateZip()) {
+            showError('Invalid ZIP Code');
+            return;
+        }
+
+        const payload = {
+            orderId,
+            productId,
+            productName,
+            amount: paymentAmount,
+            cardType,
+            cardName,
+            cardNumber,
+            expiryDate,
+            cvv,
+            zip,
+            firstName,
+            lastName,
+            address
+        };
+
+        try {
+            const response = await fetch('/api/authorize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                showError('Authorization failed: ' + (data.message || 'Unknown error'));
+                return;
+            }
+
+            const maskedCard = maskCardNumber(cardNumber);
+            showConfirmationView(data, maskedCard, selected || { productId, productName });
+        } catch (error) {
+            console.error('Error submitting payment:', error);
+            showError('Could not reach authorization service');
+        }
+    }
+
+    initializeCheckout();
 </script>
-
 </body>
 </html>

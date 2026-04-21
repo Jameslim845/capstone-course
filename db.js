@@ -21,10 +21,11 @@ async function initDb() {
     CREATE TABLE IF NOT EXISTS authorizations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       order_id TEXT NOT NULL,
+      product_id TEXT,
+      product_name TEXT,
       transaction_datetime TEXT NOT NULL,
       authorization_amount REAL NOT NULL,
       authorization_expiration TEXT NULL,
-      raw_authorization_expiration TEXT NULL,
       authorization_token TEXT NOT NULL,
       payment_status TEXT NOT NULL,
       settlement_status TEXT DEFAULT 'NOT_SETTLED',

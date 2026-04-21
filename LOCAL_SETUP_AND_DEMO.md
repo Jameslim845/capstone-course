@@ -1,63 +1,51 @@
 # 🚀 Capstone Project – Local Setup & Demo Guide (SQLite Version)
 
-## ⚠️ IMPORTANT 
-This project **does NOT use MySQL Workbench anymore**.
+## ⚠️ IMPORTANT
 
-✅ No MySQL  
-✅ No MySQL Workbench  
-✅ No database installation required  
+This project uses SQLite, not MySQL.
 
-The database is now a **local file (SQLite)** that is automatically created.
+* No MySQL required
+* No MySQL Workbench required
+* No database server required
 
----
-
-First Create a Project folder in file explorer, open it, and in the empty space open the terminal, right click empty space and open terminal.
+The database is a local file created automatically by the app.
 
 ---
 
 # 🧰 REQUIRED SOFTWARE
 
 ## 1. Install Node.js
+
 Download and install:
 https://nodejs.org
 
-After installing, verify in terminal/powershell (file explorer -> project folder -> right click in folders empty space -> click open in terminal):
+Verify installation:
 
-Type:
 node -v
 npm -v
 
-Leave the terminal open youll be back (try not to open multiple terminals it gets confusing, if at some point something doesnt work try reloading the terminal)
 ---
 
 ## 2. Install VS Code
-Download:
+
 https://code.visualstudio.com/
 
 ---
 
-## 3. Install "DB Browser for SQLite" from the internet using your browser
-Download:
+## 3. Install DB Browser for SQLite
+
 https://sqlitebrowser.org/
 
 ---
 
 # 📂 STEP 1 — GET THE PROJECT
 
-
-
-In the terminal again type:
-
-git init
-
-then
-
 git clone <your-repo-url>
+cd <your-repo-folder>
 
 ---
 
 # 📦 STEP 2 — INSTALL DEPENDENCIES
-In the terminal again type:
 
 npm install
 
@@ -65,7 +53,7 @@ npm install
 
 # ⚙️ STEP 3 — CREATE .env FILE
 
-Next to all the rest of the files like server.js and package.json, create a new text editor file, call it .env and paste this is it:
+Create a file named .env in the root folder:
 
 PORT=3000
 OAUTH_TOKEN_URL=https://capstoneproject.proxy.beeceptor.com/oauth/token
@@ -75,17 +63,29 @@ AUTHORIZE_URL=https://capstoneproject.proxy.beeceptor.com/authorize
 
 ---
 
-# ▶️ STEP 4 — START SERVER
-In terminal Type:
+# 🧹 STEP 4 — DATABASE RESET (IMPORTANT)
+
+Because the schema was updated, delete the existing database once:
+
+data/capstone_payments.db
+
+This allows the system to recreate the database with:
+
+* product_id
+* product_name
+* single authorization_expiration field
+* updated settlement fields
+
+---
+
+# ▶️ STEP 5 — START SERVER
 
 node server.js
 
-It should say backend listening. If it throws errors then come talk to me or chatgpt.
 ---
 
-# 🌐 STEP 5 — OPEN APP
+# 🌐 STEP 6 — OPEN APPLICATION
 
-In browser type:
 http://localhost:3000/login_page1.html
 
 ---
@@ -98,23 +98,75 @@ data/capstone_payments.db
 
 # 👀 VIEW DATABASE
 
-Use DB Browser → click "Open Database" → find project folder → choose data folder -> capstone_payments.db (remember to refresh the page with the little green arrows after making changes or nothing will show up in the table)
+1. Open DB Browser for SQLite
+2. Click "Open Database"
+3. Open data/capstone_payments.db
+4. Go to "Browse Data"
+5. Select "authorizations" table
+6. Click refresh after transactions
 
 ---
 
 # 🧪 DEMO FLOW
 
-1. Run payment  
-2. Show result  
-3. Open DB  
-4. Show inserted row  
-5. Run settlement  
-6. Show updated row  
+## Payment Demo
+
+1. Open login page
+2. Log in
+3. Select product
+4. Complete checkout
+5. Submit payment
+6. Show confirmation
+7. Show database row
+
+---
+
+## Settlement Demo
+
+1. Open warehouse.html
+2. Search for order
+3. Enter final amount
+4. Submit settlement
+5. Show updated database row
+
+---
+
+# ✅ SETTLEMENT SCENARIOS
+
+## Full Settlement
+
+* Use AUTHORIZED order
+* Enter full amount
+* Result: SETTLED_FULL
+
+---
+
+## Partial Settlement
+
+* Use AUTHORIZED order
+* Enter smaller amount
+* Result: SETTLED_PARTIAL
+
+---
+
+## Invalid Over-Settlement
+
+* Enter amount greater than authorized
+* Result: error
+
+---
+
+## Already Settled Order
+
+* Attempt second settlement
+* Result: error
 
 ---
 
 # 🛠 TROUBLESHOOTING
 
-- npm not working → install Node  
-- server not starting → check .env  
-- DB missing → run server once  
+* npm not working → install Node
+* server not starting → check .env file
+* DB missing → run server once
+* schema incorrect → delete DB and restart
+* page not loading → ensure server is running on port 3000
