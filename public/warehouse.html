@@ -10,6 +10,10 @@
             margin: 0;
         }
 
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: Arial, sans-serif;
             display: flex;
@@ -45,7 +49,7 @@
 
         .page-grid {
             display: grid;
-            grid-template-columns: 0.95fr 1.05fr;
+            grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
             gap: 28px;
             align-items: start;
         }
@@ -57,6 +61,8 @@
             box-shadow: 0 8px 24px rgba(0,0,0,0.06);
             padding: 22px;
             margin-bottom: 22px;
+            position: relative;
+            z-index: 1;
         }
 
         .card h2 {
@@ -66,28 +72,47 @@
 
         .form-grid {
             display: grid;
-            grid-template-columns: 170px 1fr;
-            gap: 12px 16px;
+            grid-template-columns: 1fr;
+            gap: 14px;
             align-items: center;
         }
 
-        .form-grid label {
+        .field-group {
+            display: grid;
+            gap: 8px;
+        }
+
+        .field-group label {
             font-weight: bold;
             color: #24313d;
         }
 
         input, select {
-            padding: 10px 12px;
+            padding: 12px;
             border: 1px solid #cfd7df;
             border-radius: 8px;
             font-size: 14px;
             width: 100%;
             box-sizing: border-box;
+            background: #fff;
+            color: #1f2937;
+        }
+
+        input:focus,
+        select:focus {
+            outline: 2px solid #b7d7bb;
+            border-color: #2e7d32;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 18px;
         }
 
         button {
             padding: 12px 18px;
-            margin-top: 18px;
             cursor: pointer;
             border: none;
             border-radius: 10px;
@@ -103,7 +128,6 @@
 
         .secondary-button {
             background: #44576b;
-            margin-left: 10px;
         }
 
         .secondary-button:hover {
@@ -140,16 +164,19 @@
         }
 
         .table-wrap {
+            width: 100%;
             overflow-x: auto;
+            overflow-y: visible;
+            border-radius: 12px;
         }
 
         .order-table {
             width: 100%;
+            min-width: 1200px;
             border-collapse: collapse;
             background: white;
             margin-top: 10px;
             font-size: 14px;
-            min-width: 1200px;
         }
 
         .order-table th,
@@ -169,6 +196,12 @@
             font-size: 12px;
         }
 
+        .help-text {
+            color: #5f6b7a;
+            font-size: 13px;
+            margin-top: -2px;
+        }
+
         footer {
             background-color: #2e7d32;
             color: white;
@@ -177,23 +210,27 @@
             font-weight: bold;
         }
 
-        @media (max-width: 1100px) {
+        @media (max-width: 1200px) {
             .page-grid {
                 grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .content {
+                margin: 20px;
             }
 
             .toolbar {
                 grid-template-columns: 1fr;
             }
-        }
 
-        @media (max-width: 950px) {
-            .content {
-                margin: 20px;
+            .button-row {
+                flex-direction: column;
             }
 
-            .form-grid {
-                grid-template-columns: 1fr;
+            .button-row button {
+                width: 100%;
             }
         }
     </style>
@@ -212,16 +249,27 @@
         <div>
             <div class="card">
                 <h2>Settle Order</h2>
-                <div class="form-grid">
-                    <label for="orderId">Order ID</label>
-                    <input type="text" id="orderId" placeholder="Enter order ID">
 
-                    <label for="finalAmount">Final Amount ($)</label>
-                    <input type="number" id="finalAmount" step="0.01" placeholder="Enter final settlement amount">
+                <div class="form-grid">
+                    <div class="field-group">
+                        <label for="orderId">Order ID</label>
+                        <input type="text" id="orderId" placeholder="Enter order ID">
+                    </div>
+
+                    <div class="field-group">
+                        <label for="finalAmount">Final Amount ($)</label>
+                        <input type="number" id="finalAmount" step="0.01" placeholder="Enter final settlement amount">
+                    </div>
                 </div>
 
-                <button onclick="submitSettlement()">Submit Settlement</button>
-                <button class="secondary-button" onclick="loadAuthorizations()">Refresh Orders</button>
+                <div class="help-text">
+                    Tip: Use an order with payment status <strong>AUTHORIZED</strong>. Full settlement uses the exact authorized amount. Partial settlement uses a smaller amount.
+                </div>
+
+                <div class="button-row">
+                    <button type="button" onclick="submitSettlement()">Submit Settlement</button>
+                    <button type="button" class="secondary-button" onclick="loadAuthorizations()">Refresh Orders</button>
+                </div>
 
                 <div id="result" class="result"></div>
             </div>
@@ -310,19 +358,14 @@
         switch (sortBy) {
             case 'oldest':
                 return Number(a.id || 0) - Number(b.id || 0);
-
             case 'amount_desc':
                 return Number(b.authorization_amount || 0) - Number(a.authorization_amount || 0);
-
             case 'amount_asc':
                 return Number(a.authorization_amount || 0) - Number(b.authorization_amount || 0);
-
             case 'order_asc':
                 return String(a.order_id || '').localeCompare(String(b.order_id || ''));
-
             case 'order_desc':
                 return String(b.order_id || '').localeCompare(String(a.order_id || ''));
-
             case 'newest':
             default:
                 return Number(b.id || 0) - Number(a.id || 0);
