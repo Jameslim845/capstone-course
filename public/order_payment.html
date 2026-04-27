@@ -138,6 +138,15 @@
             background: #374757;
         }
 
+        .demo-button {
+            background: #1f6f8b;
+            margin-left: 10px;
+        }
+
+        .demo-button:hover {
+            background: #185a72;
+        }
+
         .order-summary {
             display: grid;
             gap: 14px;
@@ -210,6 +219,12 @@
             font-size: 12px;
         }
 
+        .button-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
         footer {
             background-color: #2e7d32;
             color: white;
@@ -229,6 +244,14 @@
 
             .form-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .demo-button {
+                margin-left: 0;
+            }
+
+            .button-row button {
+                width: 100%;
             }
         }
     </style>
@@ -280,7 +303,7 @@
                     <input type="text" id="expiryDate" maxlength="5" placeholder="MM/YY" oninput="formatExpiry(this)">
 
                     <label for="cvv">CVV</label>
-                    <input type="password" id="cvv" maxlength="4" placeholder="3 or 4 digits">
+                    <input type="password" id="cvv" maxlength="4" placeholder="3 digits, or 4 for AmEx">
 
                     <label for="zipcode">Billing Zip Code</label>
                     <input type="text" id="zipcode" maxlength="5" placeholder="5-digit ZIP">
@@ -289,7 +312,11 @@
                     <input type="number" id="amount" step="0.01" readonly>
                 </div>
 
-                <button onclick="submitPayment()">Submit Payment</button>
+                <div class="button-row">
+                    <button onclick="submitPayment()">Submit Payment</button>
+                    <button type="button" class="demo-button" onclick="autofillDemoData()">Autofill Demo Data</button>
+                </div>
+
                 <div id="result" class="result"></div>
             </div>
         </div>
@@ -383,6 +410,53 @@
 </footer>
 
 <script>
+    const demoProfiles = [
+        {
+            label: 'Visa Demo Profile',
+            firstName: 'Jordan',
+            lastName: 'Rivera',
+            address: '123 Demo Creek Lane',
+            cardName: 'Jordan Rivera',
+            cardNumber: '4111111111111111',
+            expiryDate: '12/30',
+            cvv: '321',
+            zip: '30060'
+        },
+        {
+            label: 'MasterCard Demo Profile',
+            firstName: 'Morgan',
+            lastName: 'Taylor',
+            address: '456 Sample Ridge Road',
+            cardName: 'Morgan Taylor',
+            cardNumber: '5555555555554444',
+            expiryDate: '11/30',
+            cvv: '456',
+            zip: '30062'
+        },
+        {
+            label: 'American Express Demo Profile',
+            firstName: 'Casey',
+            lastName: 'Brooks',
+            address: '789 Capstone View Drive',
+            cardName: 'Casey Brooks',
+            cardNumber: '378282246310005',
+            expiryDate: '10/30',
+            cvv: '1234',
+            zip: '30066'
+        },
+        {
+            label: 'Discover Demo Profile',
+            firstName: 'Alex',
+            lastName: 'Parker',
+            address: '246 Mock Provider Street',
+            cardName: 'Alex Parker',
+            cardNumber: '6011111111111117',
+            expiryDate: '09/30',
+            cvv: '789',
+            zip: '30068'
+        }
+    ];
+
     function generateOrderId() {
         const randomPart = Math.random().toString(36).slice(2, 8).toUpperCase();
         return `ORD-${randomPart}`;
@@ -487,6 +561,16 @@
         input.value = formatCardNumberByType(digits, cardType);
         document.getElementById('cardType').value = cardType || '';
 
+        const cvvField = document.getElementById('cvv');
+        if (cardType === 'American Express') {
+            cvvField.maxLength = 4;
+            cvvField.placeholder = '4-digit AmEx CVV';
+        } else {
+            cvvField.maxLength = 3;
+            cvvField.placeholder = '3-digit CVV';
+            cvvField.value = cvvField.value.replace(/\D/g, '').slice(0, 3);
+        }
+
         const icon = document.getElementById('cardIcon');
         const isValidLength =
             (cardType === 'American Express' && digits.length === 15) ||
@@ -544,7 +628,18 @@
     }
 
     function validateCVV() {
-        return /^[0-9]{3,4}$/.test(document.getElementById('cvv').value.trim());
+        const cvv = document.getElementById('cvv').value.trim();
+        const cardType = document.getElementById('cardType').value;
+
+        if (cardType === 'American Express') {
+            return /^[0-9]{4}$/.test(cvv);
+        }
+
+        if (cardType === 'Visa' || cardType === 'MasterCard' || cardType === 'Discover') {
+            return /^[0-9]{3}$/.test(cvv);
+        }
+
+        return false;
     }
 
     function maskCardNumber(cardNumber) {
@@ -576,6 +671,29 @@
         result.style.display = 'block';
         result.className = 'result error';
         result.innerHTML = message + ' ✖';
+    }
+
+    function showSuccess(message) {
+        const result = document.getElementById('result');
+        result.style.display = 'block';
+        result.className = 'result success';
+        result.innerHTML = message + ' ✔';
+    }
+
+    function autofillDemoData() {
+        const profile = demoProfiles[Math.floor(Math.random() * demoProfiles.length)];
+
+        document.getElementById('firstName').value = profile.firstName;
+        document.getElementById('lastName').value = profile.lastName;
+        document.getElementById('address').value = profile.address;
+        document.getElementById('cardName').value = profile.cardName;
+        document.getElementById('cardNumber').value = profile.cardNumber;
+        handleCardNumberInput(document.getElementById('cardNumber'));
+        document.getElementById('expiryDate').value = profile.expiryDate;
+        document.getElementById('cvv').value = profile.cvv;
+        document.getElementById('zipcode').value = profile.zip;
+
+        showSuccess(profile.label + ' loaded for demo');
     }
 
     function showConfirmationView(data, maskedCard, selected) {
@@ -671,7 +789,11 @@
         }
 
         if (!validateCVV()) {
-            showError('Invalid CVV');
+            if (cardType === 'American Express') {
+                showError('Invalid CVV. American Express requires a 4-digit CVV');
+            } else {
+                showError('Invalid CVV. This card type requires a 3-digit CVV');
+            }
             return;
         }
 
